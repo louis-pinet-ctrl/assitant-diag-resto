@@ -1,0 +1,1196 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>L'Assistant de Visite Restaurant</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+--jaune:#c4e913;
+--noir:#1e1e1e;
+--blanc:#FFFFFF;
+--gris-fond:#F6F6F6;
+--gris-texte:#6B6B6B;
+--vert-ok:#3CB371;
+--rouge-risque:#D64545;
+--orange-warning:#F4A435;
+}
+html{font-size:16px;-webkit-text-size-adjust:100%}
+body{
+font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+background:var(--gris-fond);
+color:var(--noir);
+line-height:1.6;
+min-height:100vh;
+}
+.app-wrapper{
+max-width:650px;
+margin:0 auto;
+padding:0 16px 40px;
+min-height:100vh;
+position:relative;
+}
+.progress-bar{
+position:fixed;
+top:0;left:0;right:0;
+height:4px;
+background:rgba(0,0,0,0.08);
+z-index:1000;
+}
+.progress-fill{
+height:100%;
+background:var(--jaune);
+transition:width 0.5s cubic-bezier(0.4,0,0.2,1);
+width:0%;
+border-radius:0 2px 2px 0;
+}
+.app-header{
+background:var(--noir);
+border-radius:0 0 16px 16px;
+padding:24px 24px 20px;
+margin:0 -16px 24px;
+text-align:center;
+}
+.app-header h1{
+color:var(--blanc);
+font-size:1.25rem;
+font-weight:600;
+letter-spacing:-0.01em;
+}
+.app-header .tagline{
+color:var(--gris-texte);
+font-size:0.8rem;
+margin-top:6px;
+font-weight:400;
+}
+.screen{
+display:none;
+opacity:0;
+transform:translateY(12px);
+transition:opacity 0.4s ease, transform 0.4s ease;
+}
+.screen.active{display:block}
+.screen.visible{opacity:1;transform:translateY(0)}
+.card{
+background:var(--blanc);
+border-radius:16px;
+padding:28px 24px;
+margin-bottom:16px;
+box-shadow:0 1px 3px rgba(0,0,0,0.04);
+}
+.card h2{font-size:1.1rem;font-weight:600;margin-bottom:16px;letter-spacing:-0.01em;color:var(--noir)}
+.card h3{font-size:0.95rem;font-weight:600;margin-bottom:12px;color:var(--noir)}
+.card p{font-size:0.88rem;color:var(--gris-texte);margin-bottom:12px;line-height:1.65}
+.card p:last-child{margin-bottom:0}
+.intro-quote{
+border-left:3px solid var(--jaune);
+padding-left:16px;
+margin:16px 0;
+font-style:italic;
+font-size:0.88rem;
+color:var(--gris-texte);
+line-height:1.7;
+}
+.doc-list{list-style:none;margin:16px 0}
+.doc-list li{
+padding:10px 0;
+border-bottom:1px solid rgba(0,0,0,0.05);
+font-size:0.85rem;
+display:flex;
+align-items:flex-start;
+gap:10px;
+color:var(--noir);
+}
+.doc-list li:last-child{border-bottom:none}
+.doc-list li::before{
+content:"";
+width:6px;height:6px;min-width:6px;
+border-radius:50%;
+background:var(--jaune);
+margin-top:8px;
+}
+.btn{
+display:inline-flex;
+align-items:center;
+justify-content:center;
+padding:14px 24px;
+border-radius:12px;
+font-size:0.88rem;
+font-weight:500;
+border:none;
+cursor:pointer;
+transition:all 0.2s ease;
+width:100%;
+text-align:center;
+}
+.btn-primary{background:var(--jaune);color:var(--noir)}
+.btn-primary:hover{filter:brightness(0.95);transform:translateY(-1px)}
+.btn-secondary{background:var(--blanc);color:var(--noir);border:1.5px solid rgba(0,0,0,0.1)}
+.btn-secondary:hover{border-color:var(--jaune);background:rgba(196,233,19,0.05)}
+.btn-dark{background:var(--noir);color:var(--blanc)}
+.btn-dark:hover{opacity:0.9;transform:translateY(-1px)}
+.btn-group{display:flex;flex-direction:column;gap:10px;margin-top:20px}
+.choice-card{
+background:var(--blanc);
+border:1.5px solid rgba(0,0,0,0.08);
+border-radius:14px;
+padding:18px 20px;
+cursor:pointer;
+transition:all 0.2s ease;
+margin-bottom:10px;
+}
+.choice-card:hover{border-color:var(--jaune);transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,0.06)}
+.choice-card.selected{border-color:var(--jaune);background:rgba(196,233,19,0.06)}
+.choice-card .choice-title{font-size:0.9rem;font-weight:600;color:var(--noir);margin-bottom:4px}
+.choice-card .choice-desc{font-size:0.8rem;color:var(--gris-texte)}
+.section-header{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.section-badge{
+font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;
+color:var(--gris-texte);background:var(--gris-fond);padding:4px 10px;border-radius:20px;
+}
+.question-label{font-size:0.75rem;color:var(--gris-texte);text-transform:uppercase;letter-spacing:0.05em;font-weight:500;margin-bottom:6px}
+.question-text{font-size:1.05rem;font-weight:600;color:var(--noir);margin-bottom:20px;line-height:1.5}
+.question-hint{font-size:0.78rem;color:var(--gris-texte);margin-top:-12px;margin-bottom:16px;font-style:italic}
+.info-box{
+background:rgba(196,233,19,0.08);
+border-left:3px solid var(--jaune);
+border-radius:0 10px 10px 0;
+padding:14px 16px;
+margin:12px 0 16px;
+font-size:0.8rem;
+color:var(--noir);
+line-height:1.6;
+}
+.info-box strong{font-weight:600}
+.info-box .info-title{font-weight:600;font-size:0.82rem;margin-bottom:6px;display:block}
+.info-scale{margin:8px 0 4px;padding:0;list-style:none}
+.info-scale li{
+padding:3px 0;
+font-size:0.78rem;
+display:flex;
+align-items:center;
+gap:8px;
+}
+.info-scale li .dot{width:8px;height:8px;min-width:8px;border-radius:50%;display:inline-block}
+.nav-row{display:flex;gap:10px;margin-top:20px}
+.nav-row .btn{flex:1}
+.disclaimer{
+background:rgba(196,233,19,0.08);
+border-radius:12px;
+padding:16px;
+margin:16px 0;
+font-size:0.78rem;
+color:var(--gris-texte);
+line-height:1.6;
+}
+.disclaimer strong{color:var(--noir)}
+.toast{
+position:fixed;bottom:30px;left:50%;
+transform:translateX(-50%) translateY(80px);
+background:var(--noir);color:var(--blanc);
+padding:12px 24px;border-radius:12px;font-size:0.82rem;
+opacity:0;transition:all 0.4s ease;z-index:2000;white-space:nowrap;
+}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+.score-section{margin-bottom:20px}
+.score-section .score-label{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.score-section .score-name{font-size:0.85rem;font-weight:500;color:var(--noir)}
+.score-section .score-value{font-size:0.8rem;font-weight:600}
+.score-bar{height:10px;background:rgba(0,0,0,0.06);border-radius:8px;overflow:hidden}
+.score-bar-fill{height:100%;border-radius:8px;transition:width 1s cubic-bezier(0.4,0,0.2,1);width:0%}
+.global-score{text-align:center;padding:28px 20px}
+.global-score .score-number{font-size:3rem;font-weight:700;letter-spacing:-0.02em}
+.global-score .score-label-text{font-size:0.85rem;color:var(--gris-texte);margin-top:4px}
+.alert-item{display:flex;align-items:flex-start;gap:10px;padding:12px 0;border-bottom:1px solid rgba(0,0,0,0.05);font-size:0.84rem}
+.alert-item:last-child{border-bottom:none}
+.alert-dot{width:8px;height:8px;min-width:8px;border-radius:50%;margin-top:6px}
+.alert-dot.red{background:var(--rouge-risque)}
+.alert-dot.orange{background:var(--orange-warning)}
+.alert-dot.green{background:var(--vert-ok)}
+.result-checklist{list-style:none;margin:12px 0}
+.result-checklist li{padding:8px 0;font-size:0.84rem;display:flex;align-items:flex-start;gap:8px}
+.result-checklist li .check-icon{font-size:0.9rem;margin-top:1px}
+@media(max-width:480px){
+.app-wrapper{padding:0 12px 32px}
+.app-header{margin:0 -12px 20px;padding:20px 16px 16px}
+.card{padding:22px 18px}
+}
+@media print{
+.progress-bar,.btn,.nav-row{display:none!important}
+.screen{display:block!important;opacity:1!important;transform:none!important}
+}
+</style>
+</head>
+<body>
+<div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+<div class="app-wrapper">
+<header class="app-header">
+<h1>L'Assistant de Visite Restaurant</h1>
+<div class="tagline">L'outil qui transforme une visite en audit terrain structur&eacute;</div>
+</header>
+<main id="appMain"></main>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+(function(){
+"use strict";
+var state = {
+  currentScreen: 0,
+  projectType: null,
+  answers: {},
+  totalQuestions: 0,
+  answeredCount: 0
+};
+/* ─── SECTIONS & QUESTIONS ─── */
+var sections = [
+  {
+    id: "bail",
+    name: "Bail commercial",
+    icon: "\u{1F4C4}",
+    questions: [
+      {
+        id: "bail_duree",
+        text: "Quelle est la dur\u00e9e restante du bail ?",
+        hint: "Un bail court (<3 ans) limite la visibilit\u00e9 et peut impacter le financement bancaire.",
+        type: "choice",
+        options: [
+          { label: "Plus de 6 ans", value: "ok", score: 3 },
+          { label: "Entre 3 et 6 ans", value: "moyen", score: 2 },
+          { label: "Moins de 3 ans", value: "risque", score: 1 },
+          { label: "Je ne sais pas encore", value: "inconnu", score: 0 }
+        ],
+        alert_if: ["risque"],
+        alert_msg: "Bail court : risque de non-renouvellement ou d\u2019augmentation de loyer. V\u00e9rifiez les conditions de renouvellement."
+      },
+      {
+        id: "bail_destination",
+        text: "La clause de destination du bail autorise-t-elle votre activit\u00e9 de restauration ?",
+        hint: "V\u00e9rifiez que le bail permet l\u2019activit\u00e9 envisag\u00e9e (restauration, bar, traiteur\u2026).",
+        type: "choice",
+        options: [
+          { label: "Oui, activit\u00e9 restauration explicitement autoris\u00e9e", value: "ok", score: 3 },
+          { label: "Clause \u00abtous commerces\u00bb ou assimil\u00e9e", value: "moyen", score: 2 },
+          { label: "Non ou je ne suis pas s\u00fbr", value: "risque", score: 0 },
+          { label: "Je n\u2019ai pas encore le bail", value: "inconnu", score: 0 }
+        ],
+        alert_if: ["risque"],
+        alert_msg: "Clause de destination restrictive : risque de r\u00e9siliation si activit\u00e9 non conforme."
+      },
+      {
+        id: "bail_loyer",
+        text: "Le loyer vous semble-t-il coh\u00e9rent avec le march\u00e9 local ?",
+        hint: "Comparez avec les loyers pratiqu\u00e9s dans le quartier pour la m\u00eame surface.",
+        type: "choice",
+        infoBox: {
+          title: "Le taux d\u2019effort, c\u2019est quoi ?",
+          text: "Le taux d\u2019effort correspond au ratio loyer annuel / chiffre d\u2019affaires HT. Il permet de mesurer le poids du loyer sur votre activit\u00e9.",
+          scale: [
+            { label: "7 \u00e0 8\u00a0% \u2014 Loyer raisonnable", color: "var(--vert-ok)" },
+            { label: "9\u00a0% \u2014 Loyer \u00e9lev\u00e9, vigilance", color: "var(--orange-warning)" },
+            { label: "10\u00a0% \u2014 Segment premium, justifiable si l\u2019emplacement g\u00e9n\u00e8re un fort flux", color: "var(--orange-warning)" },
+            { label: "> 10\u00a0% hors centre commercial \u2014 Taux d\u2019effort tr\u00e8s \u00e9lev\u00e9, risque r\u00e9el pour la viabilit\u00e9 du projet", color: "var(--rouge-risque)" }
+          ]
+        },
+        options: [
+          { label: "Oui, dans la fourchette du march\u00e9 (taux d\u2019effort < 8\u00a0%)", value: "ok", score: 3 },
+          { label: "L\u00e9g\u00e8rement au-dessus (taux d\u2019effort 8-10\u00a0%)", value: "moyen", score: 2 },
+          { label: "Nettement au-dessus (taux d\u2019effort > 10\u00a0%) ou je ne sais pas", value: "risque", score: 1 },
+          { label: "Je n\u2019ai pas encore cette information", value: "inconnu", score: 0 }
+        ],
+        alert_if: ["risque"],
+        alert_msg: "Taux d\u2019effort sup\u00e9rieur \u00e0 10\u00a0% hors centre commercial : risque important pour la viabilit\u00e9 financi\u00e8re du projet."
+      },
+      {
+        id: "bail_charges",
+        text: "Avez-vous le d\u00e9tail des charges locatives (provisions sur charges, taxe fonci\u00e8re, TEOM) ?",
+        type: "choice",
+        options: [
+          { label: "Oui, d\u00e9tail clair et raisonnable", value: "ok", score: 3 },
+          { label: "Partiellement, certaines zones d\u2019ombre", value: "moyen", score: 2 },
+          { label: "Non, pas encore transmis", value: "risque", score: 1 }
+        ]
+      },
+      {
+        id: "bail_travaux",
+        text: "Le bail pr\u00e9voit-il une clause sur les travaux que peut r\u00e9aliser le locataire ?",
+        hint: "Certains baux interdisent les travaux sans accord du bailleur.",
+        type: "choice",
+        options: [
+          { label: "Travaux libres avec information du bailleur", value: "ok", score: 3 },
+          { label: "Travaux soumis \u00e0 accord pr\u00e9alable du bailleur", value: "moyen", score: 2 },
+          { label: "Travaux tr\u00e8s limit\u00e9s ou interdits", value: "risque", score: 1 },
+          { label: "Je ne sais pas encore", value: "inconnu", score: 0 }
+        ],
+        alert_if: ["risque"],
+        alert_msg: "Restrictions travaux : anticipez les difficult\u00e9s pour am\u00e9nager le local selon votre concept."
+      }
+    ]
+  },
+  {
+    id: "copro",
+    name: "Copropri\u00e9t\u00e9",
+    icon: "\u{1F3E2}",
+    questions: [
+      {
+        id: "copro_travaux_communs",
+        text: "Des travaux de copropri\u00e9t\u00e9 sont-ils pr\u00e9vus (ravalement, toiture, parties communes) ?",
+        hint: "Demandez les PV d\u2019AG des 3 derni\u00e8res ann\u00e9es. Nous v\u00e9rifierons le r\u00e8glement de copropri\u00e9t\u00e9 de notre c\u00f4t\u00e9.",
+        type: "choice",
+        options: [
+          { label: "Non, rien de pr\u00e9vu", value: "ok", score: 3 },
+          { label: "Travaux mineurs pr\u00e9vus", value: "moyen", score: 2 },
+          { label: "Travaux importants vot\u00e9s ou envisag\u00e9s", value: "risque", score: 1 },
+          { label: "Je n\u2019ai pas les PV d\u2019AG", value: "inconnu", score: 0 }
+        ],
+        alert_if: ["risque"],
+        alert_msg: "Travaux de copropri\u00e9t\u00e9 importants pr\u00e9vus : appels de fonds \u00e0 anticiper dans votre budget."
+      }
+    ]
+  },
+  {
+    id: "securite",
+    name: "S\u00e9curit\u00e9 & ERP",
+    icon: "\u{1F512}",
+    questions: [
+      {
+        id: "erp_categorie",
+        text: "Connaissez-vous la cat\u00e9gorie ERP du local ?",
+        hint: "La cat\u00e9gorie d\u00e9pend de la capacit\u00e9 d\u2019accueil et d\u00e9termine les obligations de s\u00e9curit\u00e9.",
+        type: "choice",
+        options: [
+          { label: "Oui, cat\u00e9gorie 5 (petit ERP)", value: "ok", score: 3 },
+          { label: "Oui, cat\u00e9gorie 1 \u00e0 4 (obligations renforc\u00e9es)", value: "moyen", score: 2 },
+          { label: "Non, je ne connais pas la cat\u00e9gorie", value: "inconnu", score: 0 }
+        ]
+      },
+      {
+        id: "erp_commission",
+        text: "Quel est le dernier avis de la commission de s\u00e9curit\u00e9 ?",
+        type: "choice",
+        options: [
+          { label: "Avis favorable r\u00e9cent (< 3 ans)", value: "ok", score: 3 },
+          { label: "Avis favorable ancien (> 3 ans)", value: "moyen", score: 2 },
+          { label: "Avis d\u00e9favorable ou pas d\u2019information", value: "risque", score: 0 },
+          { label: "Non applicable (cat. 5)", value: "ok", score: 3 }
+        ],
+        alert_if: ["risque"],
+        alert_msg: "Commission de s\u00e9curit\u00e9 d\u00e9favorable : mise en conformit\u00e9 obligatoire avant ouverture."
+      },
+      {
+        id: "erp_secours",
+        text: "Les issues de secours sont-elles conformes et d\u00e9gag\u00e9es ?",
+        type: "choice",
+        options: [
+          { label: "Oui, conformes et accessibles", value: "ok", score: 3 },
+          { label: "Partiellement, am\u00e9nagements n\u00e9cessaires", value: "moyen", score: 2 },
+          { label: "Non ou je n\u2019ai pas v\u00e9rifi\u00e9", value: "risque", score: 1 }
+        ]
+      },
+      {
+        id: "erp_accessibilite",
+        text: "Le local est-il accessible aux personnes \u00e0 mobilit\u00e9 r\u00e9duite (PMR) ?",
+        hint: "Obligation l\u00e9gale pour les ERP \u2014 des d\u00e9rogations existent sous conditions.",
+        type: "choice",
+        options: [
+          { label: "Oui, conforme ou Ad\u2019AP en cours", value: "ok", score: 3 },
+          { label: "Partiellement, travaux n\u00e9cessaires", value: "moyen", score: 2 },
+          { label: "Non conforme, pas de d\u00e9rogation", value: "risque", score: 1 },
+          { label: "Je ne sais pas", value: "inconnu", score: 0 }
+        ]
+      }
+    ]
+  },
+  {
+    id: "extraction",
+    name: "Extraction & Ventilation",
+    icon: "\u{1F4A8}",
+    questions: [
+      {
+        id: "ext_type",
+        text: "Quel est le type de conduite d\u2019extraction ?",
+        hint: "L\u2019extraction doit id\u00e9alement \u00eatre en conduite ext\u00e9rieure jusqu\u2019en toiture.",
+        type: "choice",
+        infoBox: {
+          title: "Pourquoi c\u2019est important ?",
+          text: "L\u2019extraction est l\u2019un des points les plus sensibles en restauration. Une extraction non conforme peut entra\u00eener un refus d\u2019autorisation, des plaintes de voisinage et des travaux tr\u00e8s co\u00fbteux. Le conduit doit d\u00e9boucher en toiture (obligation RSD)."
+        },
+        options: [
+          { label: "Conduite ext\u00e9rieure en toiture", value: "ok", score: 3 },
+          { label: "Conduite int\u00e9rieure (gaine dans l\u2019immeuble)", value: "moyen", score: 2 },
+          { label: "Pas de conduite d\u2019extraction visible", value: "risque", score: 0 },
+          { label: "Je ne sais pas", value: "inconnu", score: 0 }
+        ],
+        alert_if: ["risque"],
+        alert_msg: "Absence d\u2019extraction : point bloquant majeur. Les travaux de cr\u00e9ation d\u2019un conduit sont lourds et n\u00e9cessitent l\u2019accord de la copropri\u00e9t\u00e9."
+      },
+      {
+        id: "ext_chemisage",
+        text: "La conduite d\u2019extraction est-elle chemis\u00e9e (tubage inox int\u00e9rieur) ?",
+        hint: "Le chemisage en inox prot\u00e8ge le conduit et facilite l\u2019entretien. C\u2019est une exigence fr\u00e9quente.",
+        type: "choice",
+        options: [
+          { label: "Oui, conduite chemis\u00e9e inox", value: "ok", score: 3 },
+          { label: "Non chemis\u00e9e mais en bon \u00e9tat", value: "moyen", score: 2 },
+          { label: "Non chemis\u00e9e et \u00e9tat incertain", value: "risque", score: 1 },
+          { label: "Je ne sais pas", value: "inconnu", score: 0 }
+        ]
+      },
+      {
+        id: "ext_diametre",
+        text: "Quel est le diam\u00e8tre du conduit d\u2019extraction ?",
+        hint: "Le diam\u00e8tre conditionne directement le type de cuisine que vous pourrez exploiter.",
+        type: "choice",
+        infoBox: {
+          title: "Rep\u00e8res diam\u00e8tre / activit\u00e9",
+          scale: [
+            { label: "200 mm \u2014 Suffisant pour une cuisine l\u00e9g\u00e8re (sandwicherie, saladerie)", color: "var(--vert-ok)" },
+            { label: "300 mm \u2014 Adapt\u00e9 \u00e0 une cuisine classique, cuisson mod\u00e9r\u00e9e", color: "var(--vert-ok)" },
+            { label: "400 mm \u2014 N\u00e9cessaire pour de la friture ou une cuisine intensive", color: "var(--orange-warning)" },
+            { label: "< 200 mm \u2014 Insuffisant pour la plupart des activit\u00e9s de restauration", color: "var(--rouge-risque)" }
+          ]
+        },
+        options: [
+          { label: "400 mm ou plus", value: "ok", score: 3 },
+          { label: "300 mm", value: "moyen", score: 2 },
+          { label: "200 mm", value: "moyen", score: 2 },
+          { label: "Moins de 200 mm ou je ne sais pas", value: "risque", score: 1 }
+        ]
+      },
+      {
+        id: "ext_friture",
+        text: "Allez-vous faire de la friture dans votre activit\u00e9 ?",
+        hint: "La friture g\u00e9n\u00e8re des graisses et des odeurs importantes, ce qui impose un diam\u00e8tre minimum de 300-400 mm et un syst\u00e8me de filtration renforc\u00e9.",
+        type: "choice",
+        options: [
+          { label: "Oui, friture pr\u00e9vue", value: "friture_oui", score: 2 },
+          { label: "Non, pas de friture", value: "ok", score: 3 },
+          { label: "Je ne sais pas encore", value: "inconnu", score: 1 }
+        ],
+        alert_if: ["friture_oui"],
+        alert_msg: "Friture pr\u00e9vue : v\u00e9rifiez que le diam\u00e8tre d\u2019extraction est d\u2019au minimum 300 mm (id\u00e9alement 400 mm) et qu\u2019un syst\u00e8me de filtration adapt\u00e9 est en place."
+      },
+      {
+        id: "ext_rsd",
+        text: "Disposez-vous du certificat de conformit\u00e9 RSD et du carnet d\u2019entretien ?",
+        type: "choice",
+        options: [
+          { label: "Oui, les deux documents sont disponibles et \u00e0 jour", value: "ok", score: 3 },
+          { label: "Carnet d\u2019entretien uniquement", value: "moyen", score: 2 },
+          { label: "Aucun document disponible", value: "risque", score: 0 },
+          { label: "Je ne sais pas", value: "inconnu", score: 0 }
+        ],
+        alert_if: ["risque"],
+        alert_msg: "Absence de certificat RSD : l\u2019extraction n\u2019est pas certifi\u00e9e conforme. Risque de mise en demeure et de travaux forc\u00e9s."
+      },
+      {
+        id: "ext_events",
+        text: "Le bail pr\u00e9voit-il une obligation du bailleur concernant les \u00e9vents (conduits de ventilation et a\u00e9ration) ?",
+        hint: "L\u2019obligation d\u2019\u00e9vents incombe en principe au bailleur. V\u00e9rifiez ce que pr\u00e9voit le bail.",
+        type: "choice",
+        infoBox: {
+          title: "L\u2019obligation d\u2019\u00e9vents du bailleur",
+          text: "En principe, le bailleur doit d\u00e9livrer un local avec les \u00e9vents n\u00e9cessaires \u00e0 l\u2019exploitation. Si le bail met cette charge sur le locataire, le co\u00fbt et la faisabilit\u00e9 des travaux doivent \u00eatre \u00e9valu\u00e9s pr\u00e9cis\u00e9ment."
+        },
+        options: [
+          { label: "Oui, \u00e9vents \u00e0 la charge du bailleur", value: "ok", score: 3 },
+          { label: "\u00c9vents \u00e0 la charge du locataire (pr\u00e9vu au bail)", value: "moyen", score: 2 },
+          { label: "Rien de pr\u00e9vu / pas clair", value: "risque", score: 1 },
+          { label: "Je n\u2019ai pas encore le bail", value: "inconnu", score: 0 }
+        ]
+      }
+    ]
+  },
+  {
+    id: "sanitaire",
+    name: "Sanitaire & Hygi\u00e8ne",
+    icon: "\u{1F9FC}",
+    questions: [
+      {
+        id: "san_marche_avant",
+        text: "La cuisine respecte-t-elle le principe de la marche en avant ?",
+        hint: "Les flux (propre/sale, chaud/froid) ne doivent pas se croiser.",
+        type: "choice",
+        options: [
+          { label: "Oui, flux bien s\u00e9par\u00e9s", value: "ok", score: 3 },
+          { label: "Partiellement, am\u00e9nagements possibles", value: "moyen", score: 2 },
+          { label: "Non, refonte n\u00e9cessaire", value: "risque", score: 1 },
+          { label: "Je n\u2019ai pas pu v\u00e9rifier", value: "inconnu", score: 0 }
+        ]
+      },
+      {
+        id: "san_bac_graisse",
+        text: "Un bac \u00e0 graisse est-il install\u00e9 et entretenu ?",
+        type: "choice",
+        options: [
+          { label: "Oui, avec contrat d\u2019entretien", value: "ok", score: 3 },
+          { label: "Oui, mais entretien \u00e0 v\u00e9rifier", value: "moyen", score: 2 },
+          { label: "Non install\u00e9", value: "risque", score: 1 },
+          { label: "Je ne sais pas", value: "inconnu", score: 0 }
+        ]
+      },
+      {
+        id: "san_vestiaires",
+        text: "Le local dispose-t-il de vestiaires et sanitaires pour le personnel ?",
+        type: "choice",
+        options: [
+          { label: "Oui, conformes", value: "ok", score: 3 },
+          { label: "Oui, mais \u00e0 remettre aux normes", value: "moyen", score: 2 },
+          { label: "Non", value: "risque", score: 1 }
+        ]
+      }
+    ]
+  },
+  {
+    id: "travaux",
+    name: "Travaux & \u00c9tat du local",
+    icon: "\u{1F527}",
+    questions: [
+      {
+        id: "trav_etat",
+        text: "Quel est l\u2019\u00e9tat g\u00e9n\u00e9ral du local (sols, murs, plafonds, plomberie, \u00e9lectricit\u00e9) ?",
+        type: "choice",
+        options: [
+          { label: "Bon \u00e9tat, peu de travaux \u00e0 pr\u00e9voir", value: "ok", score: 3 },
+          { label: "Correct, rafra\u00eechissement n\u00e9cessaire", value: "moyen", score: 2 },
+          { label: "Travaux importants n\u00e9cessaires", value: "risque", score: 1 }
+        ]
+      },
+      {
+        id: "trav_estimation",
+        text: "Avez-vous une estimation du co\u00fbt des travaux n\u00e9cessaires ?",
+        hint: "Nous vous recommandons de consulter un architecte ou un ma\u00eetre d\u2019\u0153uvre sp\u00e9cialis\u00e9 en restauration.",
+        type: "choice",
+        options: [
+          { label: "Oui, devis ou estimation r\u00e9aliste", value: "ok", score: 3 },
+          { label: "Estimation approximative", value: "moyen", score: 2 },
+          { label: "Pas encore d\u2019estimation", value: "risque", score: 1 }
+        ]
+      },
+      {
+        id: "trav_autorisation",
+        text: "Les travaux envisag\u00e9s n\u00e9cessitent-ils des autorisations sp\u00e9cifiques ?",
+        hint: "Permis de construire, d\u00e9claration pr\u00e9alable, accord copropri\u00e9t\u00e9, accord bailleur\u2026",
+        type: "choice",
+        options: [
+          { label: "Travaux l\u00e9gers, pas d\u2019autorisation particuli\u00e8re", value: "ok", score: 3 },
+          { label: "Autorisations n\u00e9cessaires mais anticip\u00e9es", value: "moyen", score: 2 },
+          { label: "Autorisations complexes ou incertaines", value: "risque", score: 1 },
+          { label: "Je ne sais pas encore", value: "inconnu", score: 0 }
+        ]
+      },
+      {
+        id: "trav_delais",
+        text: "Les d\u00e9lais de travaux sont-ils compatibles avec votre calendrier d\u2019ouverture ?",
+        type: "choice",
+        options: [
+          { label: "Oui, planning r\u00e9aliste", value: "ok", score: 3 },
+          { label: "Serr\u00e9 mais faisable", value: "moyen", score: 2 },
+          { label: "Incompatible ou incertain", value: "risque", score: 1 },
+          { label: "Pas encore \u00e9valu\u00e9", value: "inconnu", score: 0 }
+        ]
+      }
+    ]
+  },
+  {
+    id: "materiel",
+    name: "Mat\u00e9riel & Stock",
+    icon: "\u{1F373}",
+    questions: [
+      {
+        id: "mat_concept",
+        text: "Reprenez-vous le concept existant du c\u00e9dant ou changez-vous compl\u00e8tement de concept ?",
+        hint: "Si vous changez de concept (ex. : cr\u00eaperie vers bistronomique), une grande partie du mat\u00e9riel rachet\u00e9 pourrait ne pas vous servir.",
+        type: "choice",
+        infoBox: {
+          title: "Impact du changement de concept",
+          text: "En cession de fonds de commerce, vous rachetez l\u2019ensemble de l\u2019actif (client\u00e8le, bail, mat\u00e9riel, enseigne\u2026). Si vous changez compl\u00e8tement de concept, la valeur du mat\u00e9riel et de la client\u00e8le existante doit \u00eatre r\u00e9\u00e9valu\u00e9e \u00e0 la baisse dans la n\u00e9gociation du prix."
+        },
+        options: [
+          { label: "Je reprends le m\u00eame concept ou tr\u00e8s proche", value: "ok", score: 3 },
+          { label: "Je modifie partiellement le concept", value: "moyen", score: 2 },
+          { label: "Je change compl\u00e8tement de concept", value: "risque", score: 1 }
+        ],
+        alert_if: ["risque"],
+        alert_msg: "Changement de concept : r\u00e9\u00e9valuez la valeur r\u00e9elle du mat\u00e9riel et de la client\u00e8le dans le prix de cession.",
+        condition: function(){ return state.projectType === "cession_fonds"; }
+      },
+      {
+        id: "mat_type",
+        text: "Quel type de mat\u00e9riel est compris dans la cession ?",
+        hint: "Distinguez le petit mat\u00e9riel (ustensiles, vaisselle) du gros \u00e9quipement (chambre froide, piano, hotte\u2026).",
+        type: "choice",
+        options: [
+          { label: "Gros \u00e9quipement complet (chambre froide, piano, hotte, lave-vaisselle\u2026)", value: "ok", score: 3 },
+          { label: "Gros \u00e9quipement partiel + petit mat\u00e9riel", value: "moyen", score: 2 },
+          { label: "Essentiellement du petit mat\u00e9riel", value: "risque", score: 1 },
+          { label: "Je n\u2019ai pas encore l\u2019inventaire", value: "inconnu", score: 0 }
+        ],
+        condition: function(){ return state.projectType === "cession_fonds"; }
+      },
+      {
+        id: "mat_etat",
+        text: "Quel est l\u2019\u00e9tat g\u00e9n\u00e9ral du mat\u00e9riel ?",
+        hint: "Un mat\u00e9riel v\u00e9tuste peut n\u00e9cessiter un remplacement rapide et co\u00fbteux.",
+        type: "choice",
+        options: [
+          { label: "Mat\u00e9riel r\u00e9cent et en bon \u00e9tat", value: "ok", score: 3 },
+          { label: "Mat\u00e9riel fonctionnel mais vieillissant", value: "moyen", score: 2 },
+          { label: "Mat\u00e9riel v\u00e9tuste, remplacement \u00e0 pr\u00e9voir", value: "risque", score: 1 },
+          { label: "Je ne sais pas", value: "inconnu", score: 0 }
+        ],
+        condition: function(){ return state.projectType === "cession_fonds"; }
+      },
+      {
+        id: "mat_credit_bail",
+        text: "Certains \u00e9quipements sont-ils en cr\u00e9dit-bail (leasing) ?",
+        hint: "Un mat\u00e9riel en cr\u00e9dit-bail n\u2019appartient pas au c\u00e9dant : vous reprenez les mensualit\u00e9s, pas la propri\u00e9t\u00e9.",
+        type: "choice",
+        options: [
+          { label: "Non, tout le mat\u00e9riel est en propri\u00e9t\u00e9", value: "ok", score: 3 },
+          { label: "Oui, quelques \u00e9quipements en cr\u00e9dit-bail identifi\u00e9s", value: "moyen", score: 2 },
+          { label: "Oui, \u00e9quipements importants en cr\u00e9dit-bail", value: "risque", score: 1 },
+          { label: "Je ne sais pas", value: "inconnu", score: 0 }
+        ],
+        alert_if: ["risque"],
+        alert_msg: "Cr\u00e9dit-bail sur \u00e9quipements importants : ces \u00e9quipements ne font pas partie de l\u2019actif c\u00e9d\u00e9.",
+        condition: function(){ return state.projectType === "cession_fonds"; }
+      },
+      {
+        id: "mat_inventaire",
+        text: "La liste du mat\u00e9riel compris dans la cession est-elle d\u00e9taill\u00e9e et valoris\u00e9e ?",
+        hint: "Un inventaire pr\u00e9cis avec \u00e9tat et valeur est indispensable pour n\u00e9gocier le prix de cession.",
+        type: "choice",
+        options: [
+          { label: "Oui, inventaire complet avec \u00e9tat et valeur", value: "ok", score: 3 },
+          { label: "Liste partielle, sans valorisation", value: "moyen", score: 2 },
+          { label: "Pas de liste", value: "risque", score: 1 }
+        ],
+        condition: function(){ return state.projectType === "cession_fonds"; }
+      },
+      {
+        id: "mat_stock",
+        text: "Le stock de marchandises est-il compris dans le prix de cession ?",
+        hint: "En cession de fonds, le stock est g\u00e9n\u00e9ralement pay\u00e9 en sus du prix, \u00e9valu\u00e9 au jour de la cession.",
+        type: "choice",
+        options: [
+          { label: "Oui, stock inclus dans le prix", value: "ok", score: 3 },
+          { label: "Stock pay\u00e9 en sus, montant estim\u00e9", value: "moyen", score: 2 },
+          { label: "Stock pay\u00e9 en sus, montant non d\u00e9fini", value: "risque", score: 1 },
+          { label: "Je ne sais pas", value: "inconnu", score: 0 }
+        ],
+        condition: function(){ return state.projectType === "cession_fonds"; }
+      }
+    ]
+  },
+  {
+    id: "operationnel",
+    name: "Op\u00e9rationnel & Juridique",
+    icon: "\u2696\uFE0F",
+    questions: [
+      {
+        id: "op_licence",
+        text: "Le local dispose-t-il d\u2019une licence de d\u00e9bit de boissons ?",
+        hint: "Licence III (boissons ferment\u00e9es) ou Licence IV (tous alcools).",
+        type: "choice",
+        options: [
+          { label: "Oui, licence IV", value: "ok", score: 3 },
+          { label: "Oui, licence III ou licence restaurant", value: "moyen", score: 2 },
+          { label: "Non, pas de licence", value: "risque", score: 1 },
+          { label: "Je ne sais pas", value: "inconnu", score: 0 }
+        ]
+      },
+      {
+        id: "op_terrasse",
+        text: "Le restaurant dispose-t-il d\u2019une terrasse avec convention d\u2019occupation du domaine public ?",
+        type: "choice",
+        options: [
+          { label: "Oui, convention en cours de validit\u00e9", value: "ok", score: 3 },
+          { label: "Oui, mais convention \u00e0 renouveler", value: "moyen", score: 2 },
+          { label: "Pas de terrasse", value: "ok", score: 2 },
+          { label: "Terrasse sans convention", value: "risque", score: 0 }
+        ]
+      },
+      {
+        id: "op_salaries",
+        text: "Y a-t-il des salari\u00e9s \u00e0 reprendre (article L.1224-1 du Code du travail) ?",
+        hint: "En cession de fonds de commerce, le transfert des contrats de travail est automatique.",
+        type: "choice",
+        options: [
+          { label: "Oui, liste et contrats transmis", value: "ok", score: 3 },
+          { label: "Oui, mais informations partielles", value: "moyen", score: 2 },
+          { label: "Pas de salari\u00e9", value: "ok", score: 3 },
+          { label: "Je ne sais pas", value: "inconnu", score: 0 }
+        ],
+        condition: function(){ return state.projectType === "cession_fonds"; }
+      },
+      {
+        id: "op_contrats",
+        text: "Avez-vous la liste des contrats en cours (fournisseurs, maintenance, assurance) ?",
+        type: "choice",
+        options: [
+          { label: "Oui, liste compl\u00e8te transmise", value: "ok", score: 3 },
+          { label: "Partiellement", value: "moyen", score: 2 },
+          { label: "Non", value: "risque", score: 1 }
+        ]
+      },
+      {
+        id: "op_nantissement",
+        text: "Existe-t-il un nantissement sur le fonds de commerce ?",
+        hint: "Un nantissement peut bloquer ou retarder la cession.",
+        type: "choice",
+        options: [
+          { label: "Non, fonds libre de nantissement", value: "ok", score: 3 },
+          { label: "Oui, mais identifi\u00e9 et g\u00e9rable", value: "moyen", score: 2 },
+          { label: "Oui, situation complexe", value: "risque", score: 0 },
+          { label: "Je ne sais pas", value: "inconnu", score: 0 }
+        ],
+        alert_if: ["risque"],
+        alert_msg: "Nantissement : peut bloquer la cession. V\u00e9rification imp\u00e9rative aupr\u00e8s du greffe du tribunal de commerce.",
+        condition: function(){ return state.projectType === "cession_fonds"; }
+      },
+      {
+        id: "op_bilans",
+        text: "Avez-vous analys\u00e9 les trois derniers bilans comptables ?",
+        hint: "Regardez le chiffre d\u2019affaires, la rentabilit\u00e9, les dettes fournisseurs et le BFR.",
+        type: "choice",
+        options: [
+          { label: "Oui, bilans coh\u00e9rents", value: "ok", score: 3 },
+          { label: "Oui, mais points \u00e0 \u00e9claircir", value: "moyen", score: 2 },
+          { label: "Non, pas encore re\u00e7us", value: "risque", score: 1 }
+        ],
+        condition: function(){ return state.projectType === "cession_fonds"; }
+      }
+    ]
+  }
+];
+/* ─── HELPERS ─── */
+function $(sel){ return document.querySelector(sel); }
+function el(tag, cls, html){
+  var e = document.createElement(tag);
+  if(cls) e.className = cls;
+  if(html) e.innerHTML = html;
+  return e;
+}
+function showToast(msg){
+  var t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(function(){ t.classList.remove("show"); }, 2500);
+}
+function copyText(text){
+  function fallbackCopy(t){
+    var ta = document.createElement("textarea");
+    ta.value = t;
+    ta.style.position = "fixed";
+    ta.style.left = "-9999px";
+    ta.style.top = "-9999px";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    try {
+      var ok = document.execCommand("copy");
+      if(ok) showToast("Email copi\u00e9 dans le presse-papiers");
+      else showToast("Copie impossible \u2014 copiez manuellement le texte");
+    } catch(e){
+      showToast("Copie impossible \u2014 copiez manuellement le texte");
+    }
+    document.body.removeChild(ta);
+  }
+  if(navigator.clipboard && typeof navigator.clipboard.writeText === "function"){
+    navigator.clipboard.writeText(text).then(
+      function(){ showToast("Email copi\u00e9 dans le presse-papiers"); },
+      function(){ fallbackCopy(text); }
+    );
+  } else {
+    fallbackCopy(text);
+  }
+}
+function updateProgress(pct){
+  document.getElementById("progressFill").style.width = pct + "%";
+}
+function getActiveQuestions(){
+  var qs = [];
+  sections.forEach(function(sec){
+    sec.questions.forEach(function(q){
+      if(!q.condition || q.condition()) qs.push({ section: sec, question: q });
+    });
+  });
+  return qs;
+}
+/* ─── SCREENS ─── */
+var screens = [];
+var currentIdx = 0;
+function renderApp(){
+  screens = [];
+  currentIdx = 0;
+  state.answers = {};
+  state.answeredCount = 0;
+  screens.push({ type: "intro" });
+  screens.push({ type: "project_type" });
+  screens.push({ type: "documents" });
+  showScreen(0);
+}
+function buildQuestionScreens(){
+  screens = screens.slice(0, 3);
+  var qs = getActiveQuestions();
+  state.totalQuestions = qs.length;
+  qs.forEach(function(item, i){
+    screens.push({ type: "question", data: item, index: i });
+  });
+  screens.push({ type: "result" });
+}
+function showScreen(idx){
+  currentIdx = idx;
+  var main = document.getElementById("appMain");
+  main.innerHTML = "";
+  var screen = screens[idx];
+  var div = el("div", "screen active");
+  if(screen.type === "intro") renderIntro(div);
+  else if(screen.type === "project_type") renderProjectType(div);
+  else if(screen.type === "documents") renderDocuments(div);
+  else if(screen.type === "question") renderQuestion(div, screen);
+  else if(screen.type === "result") renderResult(div);
+  main.appendChild(div);
+  setTimeout(function(){ div.classList.add("visible"); }, 30);
+  var total = screens.length;
+  var pct = Math.round((idx / (total - 1)) * 100);
+  updateProgress(pct);
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+/* ─── PAGE 1: INTRO ─── */
+function renderIntro(container){
+  var hero = el("div", "card");
+  hero.innerHTML = '<h2 style="font-size:1.2rem;line-height:1.4;margin-bottom:14px">Vous allez visiter un local pour votre futur restaurant.</h2>' +
+    '<p style="font-size:0.92rem;color:var(--noir);line-height:1.7;margin-bottom:14px">' +
+    'C\u2019est le moment o\u00f9 tout se joue. Un d\u00e9tail oubli\u00e9 aujourd\u2019hui, ' +
+    'c\u2019est un probl\u00e8me \u00e0 50\u202f000\u00a0\u20ac dans six mois.' +
+    '</p>' +
+    '<p style="font-size:0.88rem;color:var(--gris-texte);line-height:1.7">' +
+    'Extraction non conforme, bail qui ne couvre pas votre activit\u00e9, nantissement cach\u00e9, ' +
+    'charges sous-estim\u00e9es, mat\u00e9riel en cr\u00e9dit-bail\u2026 ' +
+    'Les pi\u00e8ges sont techniques, juridiques, et souvent invisibles \u00e0 l\u2019\u0153il nu.' +
+    '</p>';
+  container.appendChild(hero);
+  var whatCard = el("div", "card");
+  whatCard.innerHTML = '<h3>Ce que cet outil va faire pour vous</h3>' +
+    '<p style="font-size:0.88rem;color:var(--noir);line-height:1.7;margin-bottom:14px">' +
+    'En 5 minutes, vous passez en revue chaque point critique de votre futur local : ' +
+    'bail, copropri\u00e9t\u00e9, s\u00e9curit\u00e9 ERP, extraction, hygi\u00e8ne, travaux, mat\u00e9riel, situation juridique.' +
+    '</p>' +
+    '<p style="font-size:0.88rem;color:var(--noir);line-height:1.7;margin-bottom:14px">' +
+    '\u00c0 la fin, vous obtenez\u00a0:' +
+    '</p>' +
+    '<ul class="doc-list">' +
+    '<li>Un score de visite section par section</li>' +
+    '<li>Les alertes concr\u00e8tes sur les risques identifi\u00e9s</li>' +
+    '<li>La liste des points \u00e0 creuser avant de vous engager</li>' +
+    '<li>Les prochaines \u00e9tapes \u00e0 suivre avec les bons professionnels</li>' +
+    '</ul>';
+  container.appendChild(whatCard);
+  var hookCard = el("div", "card");
+  hookCard.innerHTML = '<h3>Concr\u00e8tement, vous allez r\u00e9pondre \u00e0 ces questions</h3>' +
+    '<p style="font-size:0.85rem;color:var(--gris-texte);line-height:1.7">' +
+    'Le bail autorise-t-il votre activit\u00e9\u00a0? Le loyer est-il tenable\u00a0? ' +
+    'L\u2019extraction passe-t-elle en toiture\u00a0? Quel diam\u00e8tre\u00a0? ' +
+    'La commission de s\u00e9curit\u00e9 est-elle favorable\u00a0? ' +
+    'Le mat\u00e9riel est-il en propri\u00e9t\u00e9 ou en cr\u00e9dit-bail\u00a0? ' +
+    'Y a-t-il un nantissement sur le fonds\u00a0? Des salari\u00e9s \u00e0 reprendre\u00a0?' +
+    '</p>' +
+    '<p style="font-size:0.85rem;color:var(--gris-texte);line-height:1.7;margin-top:10px">' +
+    'Des questions simples, des r\u00e9ponses en un clic. Pas besoin d\u2019\u00eatre juriste.' +
+    '</p>';
+  container.appendChild(hookCard);
+  var disc = el("div", "disclaimer");
+  disc.innerHTML = '<strong>Ma\u00eetre Louis Pinet \u2014 Avocat au service des restaurateurs.</strong> ' +
+    'Cet outil ne remplace pas l\u2019intervention d\u2019un architecte, d\u2019un ma\u00eetre d\u2019\u0153uvre ou d\u2019un expert-comptable. ' +
+    'Il structure votre visite et identifie les points de vigilance pour que vous posiez les bonnes questions au bon moment.';
+  container.appendChild(disc);
+  var btnGroup = el("div", "btn-group");
+  var btnStart = el("button", "btn btn-primary", "D\u00e9marrer mon audit de visite \u2192");
+  btnStart.onclick = function(){ showScreen(1); };
+  btnGroup.appendChild(btnStart);
+  container.appendChild(btnGroup);
+}
+/* ─── PAGE 2: PROJECT TYPE ─── */
+function renderProjectType(container){
+  var card = el("div", "card");
+  card.innerHTML = '<div class="question-label">\u00c9tape pr\u00e9alable</div>' +
+    '<div class="question-text">Quel est votre projet ?</div>' +
+    '<p>Le type de projet d\u00e9termine les points de vigilance sp\u00e9cifiques.</p>';
+  var choices = [
+    { value: "cession_fonds", title: "Cession de fonds de commerce", desc: "Rachat de l\u2019actif : client\u00e8le, bail, mat\u00e9riel, enseigne, licence, salari\u00e9s\u2026" },
+    { value: "droit_bail", title: "Cession de droit au bail", desc: "Reprise du bail commercial uniquement, pas du fonds de commerce." },
+    { value: "nouveau_bail", title: "Nouveau bail commercial", desc: "Signature d\u2019un bail neuf sur un local vacant ou \u00e0 transformer." }
+  ];
+  choices.forEach(function(c){
+    var ch = el("div", "choice-card");
+    ch.innerHTML = '<div class="choice-title">' + c.title + '</div><div class="choice-desc">' + c.desc + '</div>';
+    ch.onclick = function(){
+      state.projectType = c.value;
+      card.querySelectorAll(".choice-card").forEach(function(el){ el.classList.remove("selected"); });
+      ch.classList.add("selected");
+    };
+    card.appendChild(ch);
+  });
+  container.appendChild(card);
+  var disc = el("div", "disclaimer");
+  disc.innerHTML = '<strong>Rappel :</strong> En cession de fonds de commerce, vous rachetez un actif comprenant ' +
+    'la client\u00e8le, le droit au bail, le mat\u00e9riel, l\u2019enseigne, la licence et les contrats de travail ' +
+    '(transfert automatique art. L.1224-1 C. trav.). Le prix doit \u00eatre coh\u00e9rent avec la valeur r\u00e9elle de ces \u00e9l\u00e9ments.';
+  container.appendChild(disc);
+  var btnGroup = el("div", "btn-group");
+  var btnNext = el("button", "btn btn-primary", "Continuer \u2192");
+  btnNext.onclick = function(){
+    if(!state.projectType){ showToast("Veuillez choisir votre type de projet"); return; }
+    showScreen(2);
+  };
+  btnGroup.appendChild(btnNext);
+  var btnBack = el("button", "btn btn-secondary", "\u2190 Retour");
+  btnBack.onclick = function(){ showScreen(0); };
+  btnGroup.appendChild(btnBack);
+  container.appendChild(btnGroup);
+}
+/* ─── PAGE DOCUMENTS ─── */
+function renderDocuments(container){
+  var isCession = state.projectType === "cession_fonds";
+  var isDroitBail = state.projectType === "droit_bail";
+  var docCard = el("div", "card");
+  if(isCession){
+    docCard.innerHTML = '<h3>Documents \u00e0 demander au c\u00e9dant</h3>' +
+      '<p>Avant toute visite, demandez au c\u00e9dant les documents suivants :</p>' +
+      '<ul class="doc-list">' +
+      '<li>Bail commercial (avec avenants \u00e9ventuels)</li>' +
+      '<li>R\u00e8glement de copropri\u00e9t\u00e9</li>' +
+      '<li>PV d\u2019Assembl\u00e9es G\u00e9n\u00e9rales (3 derni\u00e8res ann\u00e9es)</li>' +
+      '<li>Trois derniers bilans comptables</li>' +
+      '<li>D\u00e9tail des contrats en cours (fournisseurs, assurances, licences, etc.)</li>' +
+      '<li>Autorisations administratives (licence IV ou III, convention d\u2019occupation du domaine public, etc.)</li>' +
+      '<li>Liste des \u00e9quipements et mat\u00e9riels compris dans la cession</li>' +
+      '<li>Engagements li\u00e9s au fonds de commerce (nantissement, cr\u00e9dits-bails)</li>' +
+      '<li>Contrats de travail repris dans le cadre du fonds</li>' +
+      '<li>Certificat de conformit\u00e9 RSD pour l\u2019extraction + carnet d\u2019entretien</li>' +
+      '<li>Taxe fonci\u00e8re et d\u00e9tail des charges</li>' +
+      '</ul>';
+  } else if(isDroitBail){
+    docCard.innerHTML = '<h3>Documents \u00e0 demander au c\u00e9dant</h3>' +
+      '<p>Avant toute visite, demandez au c\u00e9dant les documents suivants :</p>' +
+      '<ul class="doc-list">' +
+      '<li>Bail commercial (avec avenants \u00e9ventuels)</li>' +
+      '<li>R\u00e8glement de copropri\u00e9t\u00e9</li>' +
+      '<li>PV d\u2019Assembl\u00e9es G\u00e9n\u00e9rales des 3 derni\u00e8res ann\u00e9es</li>' +
+      '</ul>';
+  } else {
+    docCard.innerHTML = '<h3>Documents \u00e0 demander au bailleur</h3>' +
+      '<p>Avant toute visite, demandez au bailleur les documents suivants :</p>' +
+      '<ul class="doc-list">' +
+      '<li>Projet de bail commercial</li>' +
+      '<li>R\u00e8glement de copropri\u00e9t\u00e9</li>' +
+      '<li>PV d\u2019Assembl\u00e9es G\u00e9n\u00e9rales des 3 derni\u00e8res ann\u00e9es</li>' +
+      '<li>Taxe fonci\u00e8re et d\u00e9tail des charges</li>' +
+      '</ul>';
+  }
+  container.appendChild(docCard);
+  var btnGroup = el("div", "btn-group");
+  var btnCopy = el("button", "btn btn-secondary", "Copier l\u2019email de demande de documents");
+  btnCopy.onclick = function(){
+    var emailText = "";
+    if(isCession){
+      emailText = "Objet : Demande de documents pr\u00e9alable \u00e0 la visite du local\n\nMadame, Monsieur,\n\nDans le cadre de mon projet de reprise de fonds de commerce, je me permets de vous solliciter afin d\u2019obtenir, pr\u00e9alablement \u00e0 toute visite, les documents suivants :\n\n- Le bail commercial en cours (ainsi que ses \u00e9ventuels avenants) ;\n- Le r\u00e8glement de copropri\u00e9t\u00e9 ;\n- Les proc\u00e8s-verbaux des assembl\u00e9es g\u00e9n\u00e9rales des trois derni\u00e8res ann\u00e9es ;\n- Les trois derniers bilans comptables de l\u2019\u00e9tablissement ;\n- Le d\u00e9tail des contrats en cours (fournisseurs, assurances, licences, etc.) ;\n- Les autorisations administratives (licence IV ou III, convention d\u2019occupation du domaine public, etc.) ;\n- La liste des \u00e9quipements et mat\u00e9riels compris dans la cession ;\n- Les \u00e9ventuels engagements li\u00e9s au fonds de commerce (nantissement, cr\u00e9dits-bails) ;\n- L\u2019existence de contrats de travail repris dans le cadre du fonds ;\n- Le certificat de conformit\u00e9 au RSD pour l\u2019extraction, ainsi que le carnet d\u2019entretien ;\n- Le montant de la taxe fonci\u00e8re et le d\u00e9tail des charges.\n\nJe vous remercie par avance pour la communication de ces \u00e9l\u00e9ments, qui me permettront de pr\u00e9parer au mieux ma visite et mon analyse du projet.\n\nBien cordialement,";
+    } else if(isDroitBail){
+      emailText = "Objet : Demande de documents pr\u00e9alable \u00e0 la visite du local\n\nMadame, Monsieur,\n\nDans le cadre de mon projet de reprise de droit au bail, je me permets de vous solliciter afin d\u2019obtenir, pr\u00e9alablement \u00e0 toute visite, les documents suivants :\n\n- Le bail commercial en cours (ainsi que ses \u00e9ventuels avenants) ;\n- Le r\u00e8glement de copropri\u00e9t\u00e9 ;\n- Les proc\u00e8s-verbaux des assembl\u00e9es g\u00e9n\u00e9rales des trois derni\u00e8res ann\u00e9es.\n\nJe vous remercie par avance pour la communication de ces \u00e9l\u00e9ments, qui me permettront de pr\u00e9parer au mieux ma visite et mon analyse du projet.\n\nBien cordialement,";
+    } else {
+      emailText = "Objet : Demande de documents pr\u00e9alable \u00e0 la visite du local\n\nMadame, Monsieur,\n\nDans le cadre de mon projet d\u2019installation, je me permets de vous solliciter afin d\u2019obtenir, pr\u00e9alablement \u00e0 toute visite, les documents suivants :\n\n- Le projet de bail commercial ;\n- Le r\u00e8glement de copropri\u00e9t\u00e9 ;\n- Les proc\u00e8s-verbaux des assembl\u00e9es g\u00e9n\u00e9rales des trois derni\u00e8res ann\u00e9es ;\n- Le montant de la taxe fonci\u00e8re et le d\u00e9tail des charges.\n\nJe vous remercie par avance pour la communication de ces \u00e9l\u00e9ments, qui me permettront de pr\u00e9parer au mieux ma visite et mon analyse du projet.\n\nBien cordialement,";
+    }
+    copyText(emailText);
+  };
+  btnGroup.appendChild(btnCopy);
+  var btnNext = el("button", "btn btn-primary", "Commencer l\u2019audit \u2192");
+  btnNext.onclick = function(){
+    buildQuestionScreens();
+    showScreen(3);
+  };
+  btnGroup.appendChild(btnNext);
+  var btnBack = el("button", "btn btn-secondary", "\u2190 Retour");
+  btnBack.onclick = function(){ showScreen(1); };
+  btnGroup.appendChild(btnBack);
+  container.appendChild(btnGroup);
+}
+/* ─── QUESTIONS ─── */
+function renderQuestion(container, screen){
+  var sec = screen.data.section;
+  var q = screen.data.question;
+  var qIdx = screen.index;
+  var total = state.totalQuestions;
+  var card = el("div", "card");
+  var header = '<div class="section-header"><span class="section-badge">' + sec.icon + ' ' + sec.name + '</span></div>' +
+    '<div class="question-label">Question ' + (qIdx + 1) + ' sur ' + total + '</div>' +
+    '<div class="question-text">' + q.text + '</div>';
+  if(q.hint) header += '<div class="question-hint">' + q.hint + '</div>';
+  card.innerHTML = header;
+  if(q.infoBox){
+    var ib = el("div", "info-box");
+    var ibHTML = '';
+    if(q.infoBox.title) ibHTML += '<span class="info-title">' + q.infoBox.title + '</span>';
+    if(q.infoBox.text) ibHTML += '<span>' + q.infoBox.text + '</span>';
+    if(q.infoBox.scale){
+      ibHTML += '<ul class="info-scale">';
+      q.infoBox.scale.forEach(function(s){
+        ibHTML += '<li><span class="dot" style="background:' + s.color + '"></span>' + s.label + '</li>';
+      });
+      ibHTML += '</ul>';
+    }
+    ib.innerHTML = ibHTML;
+    card.appendChild(ib);
+  }
+  var selectedValue = state.answers[q.id] ? state.answers[q.id].value : null;
+  q.options.forEach(function(opt){
+    var ch = el("div", "choice-card" + (selectedValue === opt.value ? " selected" : ""));
+    ch.innerHTML = '<div class="choice-title">' + opt.label + '</div>';
+    ch.onclick = function(){
+      state.answers[q.id] = { value: opt.value, score: opt.score, maxScore: 3, sectionId: sec.id };
+      card.querySelectorAll(".choice-card").forEach(function(el){ el.classList.remove("selected"); });
+      ch.classList.add("selected");
+      setTimeout(function(){
+        if(currentIdx < screens.length - 1) showScreen(currentIdx + 1);
+      }, 300);
+    };
+    card.appendChild(ch);
+  });
+  container.appendChild(card);
+  var nav = el("div", "nav-row");
+  var btnBack = el("button", "btn btn-secondary", "\u2190");
+  btnBack.style.flex = "0 0 60px";
+  btnBack.onclick = function(){ showScreen(currentIdx - 1); };
+  nav.appendChild(btnBack);
+  if(currentIdx < screens.length - 1){
+    var btnSkip = el("button", "btn btn-secondary", "Passer cette question");
+    btnSkip.onclick = function(){ showScreen(currentIdx + 1); };
+    nav.appendChild(btnSkip);
+  }
+  container.appendChild(nav);
+}
+/* ─── RESULTS ─── */
+function renderResult(container){
+  var sectionScores = {};
+  var alerts = [];
+  var totalScore = 0;
+  var totalMax = 0;
+  sections.forEach(function(sec){
+    sectionScores[sec.id] = { score: 0, max: 0, name: sec.name, icon: sec.icon };
+  });
+  var activeQs = getActiveQuestions();
+  activeQs.forEach(function(item){
+    var q = item.question;
+    var sec = item.section;
+    var a = state.answers[q.id];
+    if(a){
+      sectionScores[sec.id].score += a.score;
+      sectionScores[sec.id].max += 3;
+      totalScore += a.score;
+      totalMax += 3;
+      if(q.alert_if && q.alert_msg && q.alert_if.indexOf(a.value) !== -1){
+        alerts.push({ section: sec.name, msg: q.alert_msg, level: "red" });
+      }
+    } else {
+      sectionScores[sec.id].max += 3;
+      totalMax += 3;
+    }
+  });
+  var globalPct = totalMax > 0 ? Math.round((totalScore / totalMax) * 100) : 0;
+  var globalColor = globalPct >= 70 ? "var(--vert-ok)" : globalPct >= 40 ? "var(--orange-warning)" : "var(--rouge-risque)";
+  var scoreCard = el("div", "card");
+  scoreCard.innerHTML = '<div class="global-score">' +
+    '<div class="score-number" style="color:' + globalColor + '">' + globalPct + '%</div>' +
+    '<div class="score-label-text">Score global de visite</div></div>';
+  var interpretation = "";
+  if(globalPct >= 70) interpretation = "Le local pr\u00e9sente un profil globalement favorable. Restez vigilant sur les points signal\u00e9s ci-dessous.";
+  else if(globalPct >= 40) interpretation = "Plusieurs points n\u00e9cessitent une attention particuli\u00e8re. Approfondissez les sections en orange ou rouge avant de vous engager.";
+  else interpretation = "Des risques importants ont \u00e9t\u00e9 identifi\u00e9s. Nous vous recommandons un accompagnement professionnel approfondi avant toute d\u00e9cision.";
+  scoreCard.innerHTML += '<p style="text-align:center;font-size:0.85rem;color:var(--gris-texte)">' + interpretation + '</p>';
+  container.appendChild(scoreCard);
+  var detailCard = el("div", "card");
+  detailCard.innerHTML = '<h3>D\u00e9tail par section</h3>';
+  Object.keys(sectionScores).forEach(function(key){
+    var s = sectionScores[key];
+    if(s.max === 0) return;
+    var pct = Math.round((s.score / s.max) * 100);
+    var color = pct >= 70 ? "var(--vert-ok)" : pct >= 40 ? "var(--orange-warning)" : "var(--rouge-risque)";
+    var secDiv = el("div", "score-section");
+    secDiv.innerHTML = '<div class="score-label"><span class="score-name">' + s.icon + ' ' + s.name + '</span>' +
+      '<span class="score-value" style="color:' + color + '">' + pct + '%</span></div>' +
+      '<div class="score-bar"><div class="score-bar-fill" style="background:' + color + '" data-width="' + pct + '"></div></div>';
+    detailCard.appendChild(secDiv);
+  });
+  container.appendChild(detailCard);
+  setTimeout(function(){
+    document.querySelectorAll(".score-bar-fill").forEach(function(bar){
+      bar.style.width = bar.getAttribute("data-width") + "%";
+    });
+  }, 200);
+  if(alerts.length > 0){
+    var alertCard = el("div", "card");
+    alertCard.innerHTML = '<h3>Points de vigilance</h3>';
+    alerts.forEach(function(a){
+      var item = el("div", "alert-item");
+      item.innerHTML = '<div class="alert-dot ' + a.level + '"></div><div><strong>' + a.section + '</strong> \u2014 ' + a.msg + '</div>';
+      alertCard.appendChild(item);
+    });
+    container.appendChild(alertCard);
+  }
+  var unanswered = [];
+  activeQs.forEach(function(item){
+    if(!state.answers[item.question.id]) unanswered.push(item);
+  });
+  if(unanswered.length > 0){
+    var uCard = el("div", "card");
+    uCard.innerHTML = '<h3>Questions non r\u00e9pondues</h3><p>Ces points n\u2019ont pas \u00e9t\u00e9 renseign\u00e9s et pourraient cacher des risques :</p>';
+    var list = el("ul", "result-checklist");
+    unanswered.forEach(function(item){
+      var li = el("li");
+      li.innerHTML = '<span class="check-icon">\u25CB</span> <span>' + item.section.icon + ' ' + item.question.text + '</span>';
+      list.appendChild(li);
+    });
+    uCard.appendChild(list);
+    container.appendChild(uCard);
+  }
+  var nextCard = el("div", "card");
+  var stepsHTML = '<h3>Prochaines \u00e9tapes recommand\u00e9es</h3><ul class="result-checklist">';
+  if(state.projectType === "cession_fonds"){
+    stepsHTML += '<li><span class="check-icon">\u2192</span> Faites analyser le bail commercial et l\u2019acte de cession par un avocat</li>';
+    stepsHTML += '<li><span class="check-icon">\u2192</span> Faites auditer les bilans par un expert-comptable</li>';
+    stepsHTML += '<li><span class="check-icon">\u2192</span> V\u00e9rifiez l\u2019\u00e9tat du nantissement aupr\u00e8s du greffe du tribunal de commerce</li>';
+  } else {
+    stepsHTML += '<li><span class="check-icon">\u2192</span> Faites analyser le bail commercial par un avocat</li>';
+  }
+  stepsHTML += '<li><span class="check-icon">\u2192</span> Consultez un architecte ou ma\u00eetre d\u2019\u0153uvre pour \u00e9valuer les travaux</li>';
+  stepsHTML += '<li><span class="check-icon">\u2192</span> V\u00e9rifiez la conformit\u00e9 ERP aupr\u00e8s de la mairie ou de la pr\u00e9fecture</li>';
+  stepsHTML += '<li><span class="check-icon">\u2192</span> Faites r\u00e9aliser un diagnostic extraction par un professionnel agr\u00e9\u00e9</li>';
+  stepsHTML += '<li><span class="check-icon">\u2192</span> Pr\u00e9parez votre business plan avec le co\u00fbt r\u00e9el des travaux et mises en conformit\u00e9</li>';
+  stepsHTML += '</ul>';
+  nextCard.innerHTML = stepsHTML;
+  container.appendChild(nextCard);
+  var disc = el("div", "disclaimer");
+  disc.innerHTML = '<strong>Avertissement :</strong> Ce diagnostic est un outil d\u2019aide \u00e0 la d\u00e9cision \u00e9dit\u00e9 par Ma\u00eetre Louis Pinet \u2014 Avocat au service des restaurateurs. ' +
+    'Il ne constitue pas un conseil juridique personnalis\u00e9 et ne remplace pas l\u2019intervention d\u2019un architecte, ' +
+    'd\u2019un expert-comptable ou de tout autre professionnel comp\u00e9tent. ' +
+    'Chaque situation est unique et m\u00e9rite un accompagnement adapt\u00e9.';
+  container.appendChild(disc);
+  var btnGroup = el("div", "btn-group");
+  var btnRestart = el("button", "btn btn-secondary", "Recommencer l\u2019audit");
+  btnRestart.onclick = function(){
+    state = { currentScreen: 0, projectType: null, answers: {}, totalQuestions: 0, answeredCount: 0 };
+    renderApp();
+  };
+  btnGroup.appendChild(btnRestart);
+  var btnPrint = el("button", "btn btn-dark", "Imprimer le r\u00e9sultat");
+  btnPrint.onclick = function(){ window.print(); };
+  btnGroup.appendChild(btnPrint);
+  container.appendChild(btnGroup);
+}
+renderApp();
+})();
+</script>
+</body>
+</html>

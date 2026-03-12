@@ -1,0 +1,2394 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'unsafe-inline'; connect-src https://api.emailjs.com; img-src 'self' data: blob:">
+<title>L'Assistant de Visite Restaurant</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --jaune:#c4e913;--noir:#1e1e1e;--blanc:#FFFFFF;--gris-fond:#F6F6F6;
+  --gris-texte:#6B6B6B;--vert-ok:#3CB371;--rouge-risque:#D64545;--orange-warning:#F4A435;
+  --radius-card:16px;--radius-btn:12px;
+}
+html{font-size:16px;-webkit-text-size-adjust:100%}
+body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--gris-fond);color:var(--noir);line-height:1.6;min-height:100vh}
+.app-wrapper{max-width:650px;margin:0 auto;padding:0 16px 40px;min-height:100vh;position:relative}
+.progress-bar{position:fixed;top:0;left:0;right:0;height:4px;background:rgba(0,0,0,0.08);z-index:1000}
+.progress-fill{height:100%;background:var(--jaune);transition:width 0.5s cubic-bezier(0.4,0,0.2,1);width:0%;border-radius:0 2px 2px 0}
+.app-header{background:var(--noir);border-radius:0 0 var(--radius-card) var(--radius-card);padding:24px 24px 20px;margin:0 -16px 24px;text-align:center}
+.app-header h1{color:var(--blanc);font-size:1.25rem;font-weight:600;letter-spacing:-0.01em}
+.app-header .tagline{color:var(--gris-texte);font-size:0.8rem;margin-top:6px;font-weight:400}
+/* screen transitions moved to bottom */
+.card{background:var(--blanc);border-radius:var(--radius-card);padding:28px 24px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.04)}
+.card h2{font-size:1.1rem;font-weight:600;margin-bottom:16px;letter-spacing:-0.01em;color:var(--noir)}
+.card h3{font-size:0.95rem;font-weight:600;margin-bottom:12px;color:var(--noir)}
+.card p{font-size:0.88rem;color:var(--gris-texte);margin-bottom:12px;line-height:1.65}
+.card p:last-child{margin-bottom:0}
+.doc-list{list-style:none;margin:16px 0}
+.doc-list li{padding:10px 0;border-bottom:1px solid rgba(0,0,0,0.05);font-size:0.85rem;display:flex;align-items:flex-start;gap:10px;color:var(--noir)}
+.doc-list li:last-child{border-bottom:none}
+.doc-list li::before{content:"";width:6px;height:6px;min-width:6px;border-radius:50%;background:var(--jaune);margin-top:8px}
+.btn{display:inline-flex;align-items:center;justify-content:center;padding:14px 24px;border-radius:var(--radius-btn);font-size:0.88rem;font-weight:500;border:none;cursor:pointer;transition:all 0.2s ease;width:100%;text-align:center}
+.btn:focus-visible{outline:3px solid var(--jaune);outline-offset:2px}
+.btn-primary{background:var(--jaune);color:var(--noir)}
+.btn-primary:hover{filter:brightness(0.95);transform:translateY(-1px)}
+.btn-secondary{background:var(--blanc);color:var(--noir);border:1.5px solid rgba(0,0,0,0.1)}
+.btn-secondary:hover{border-color:var(--jaune);background:rgba(196,233,19,0.05)}
+.btn-dark{background:var(--noir);color:var(--blanc)}
+.btn-dark:hover{opacity:0.9;transform:translateY(-1px)}
+.btn-group{display:flex;flex-direction:column;gap:10px;margin-top:20px}
+.choice-card{background:var(--blanc);border:1.5px solid rgba(0,0,0,0.08);border-radius:14px;padding:18px 20px;cursor:pointer;transition:all 0.2s ease;margin-bottom:10px}
+.choice-card:hover{border-color:var(--jaune);transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,0.06)}
+.choice-card:focus-visible{outline:3px solid var(--jaune);outline-offset:2px}
+.choice-card.selected{border-color:var(--jaune);background:rgba(196,233,19,0.06)}
+.choice-card .choice-title{font-size:0.9rem;font-weight:600;color:var(--noir);margin-bottom:4px}
+.choice-card .choice-desc{font-size:0.8rem;color:var(--gris-texte)}
+.section-header{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.section-badge{font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--gris-texte);background:var(--gris-fond);padding:4px 10px;border-radius:20px}
+.question-label{font-size:0.75rem;color:var(--gris-texte);text-transform:uppercase;letter-spacing:0.05em;font-weight:500;margin-bottom:6px}
+.question-text{font-size:1.05rem;font-weight:600;color:var(--noir);margin-bottom:20px;line-height:1.5}
+.question-hint{font-size:0.78rem;color:var(--gris-texte);margin-top:-12px;margin-bottom:16px;font-style:italic}
+.info-box{background:rgba(196,233,19,0.08);border-left:3px solid var(--jaune);border-radius:0 10px 10px 0;padding:14px 16px;margin:12px 0 16px;font-size:0.8rem;color:var(--noir);line-height:1.6}
+.info-box strong{font-weight:600}
+.info-box .info-title{font-weight:600;font-size:0.82rem;margin-bottom:6px;display:block}
+.info-scale{margin:8px 0 4px;padding:0;list-style:none}
+.info-scale li{padding:3px 0;font-size:0.78rem;display:flex;align-items:center;gap:8px}
+.info-scale li .dot{width:8px;height:8px;min-width:8px;border-radius:50%;display:inline-block}
+.nav-row{display:flex;gap:10px;margin-top:20px}
+.nav-row .btn{flex:1}
+.disclaimer{background:rgba(196,233,19,0.08);border-radius:var(--radius-btn);padding:16px;margin:16px 0;font-size:0.78rem;color:var(--gris-texte);line-height:1.6}
+.disclaimer strong{color:var(--noir)}
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--noir);color:var(--blanc);padding:12px 24px;border-radius:var(--radius-btn);font-size:0.82rem;opacity:0;transition:all 0.4s ease;z-index:2000;white-space:nowrap}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+.score-section{margin-bottom:20px}
+.score-section .score-label{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.score-section .score-name{font-size:0.85rem;font-weight:500;color:var(--noir)}
+.score-section .score-value{font-size:0.8rem;font-weight:600}
+.score-bar{height:10px;background:rgba(0,0,0,0.06);border-radius:8px;overflow:hidden}
+.score-bar-fill{height:100%;border-radius:8px;transition:width 1s cubic-bezier(0.4,0,0.2,1);width:0%}
+.global-score{text-align:center;padding:28px 20px}
+.global-score .score-number{font-size:3rem;font-weight:700;letter-spacing:-0.02em}
+.global-score .score-label-text{font-size:0.85rem;color:var(--gris-texte);margin-top:4px}
+.alert-item{display:flex;align-items:flex-start;gap:10px;padding:12px 0;border-bottom:1px solid rgba(0,0,0,0.05);font-size:0.84rem}
+.alert-item:last-child{border-bottom:none}
+.alert-dot{width:8px;height:8px;min-width:8px;border-radius:50%;margin-top:6px}
+.alert-dot.red{background:var(--rouge-risque)}.alert-dot.orange{background:var(--orange-warning)}.alert-dot.green{background:var(--vert-ok)}
+.result-checklist{list-style:none;margin:12px 0}
+.result-checklist li{padding:8px 0;font-size:0.84rem;display:flex;align-items:flex-start;gap:8px}
+.result-checklist li .check-icon{font-size:0.9rem;margin-top:1px}
+.inconnu-item{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid rgba(0,0,0,0.05);font-size:0.84rem}
+.inconnu-item:last-child{border-bottom:none}
+.profile-summary{background:var(--gris-fond);border-radius:10px;padding:14px 16px;margin:12px 0;font-size:0.82rem;line-height:1.7}
+.profile-tag{display:inline-block;background:var(--jaune);color:var(--noir);font-size:0.72rem;font-weight:600;padding:3px 10px;border-radius:20px;margin:3px 4px 3px 0;letter-spacing:0.02em}
+.profile-tag.warning{background:var(--orange-warning);color:var(--blanc)}
+.profile-tag.danger{background:var(--rouge-risque);color:var(--blanc)}
+.text-input{width:100%;padding:12px 16px;border:1.5px solid rgba(0,0,0,0.1);border-radius:var(--radius-btn);font-size:0.88rem;font-family:inherit;transition:border-color 0.2s;margin-top:8px}
+.text-input:focus{outline:none;border-color:var(--jaune)}
+.text-input::placeholder{color:var(--gris-texte);opacity:0.7}
+.step-indicator{display:flex;align-items:center;gap:8px;margin-bottom:20px}
+.step-dot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.72rem;font-weight:700;border:2px solid rgba(0,0,0,0.1);color:var(--gris-texte);background:var(--blanc);transition:all 0.3s}
+.step-dot.active{border-color:var(--jaune);background:var(--jaune);color:var(--noir)}
+.step-dot.done{border-color:var(--vert-ok);background:var(--vert-ok);color:var(--blanc)}
+.step-line{flex:1;height:2px;background:rgba(0,0,0,0.08)}
+.step-line.done{background:var(--vert-ok)}
+.simulator-cta{background:linear-gradient(135deg,var(--jaune) 0%,#d4f034 100%);border-radius:var(--radius-card);padding:22px 24px;margin:16px 0;cursor:pointer;transition:all 0.2s;text-decoration:none;display:block;border:none;width:100%;text-align:left}
+.simulator-cta:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(196,233,19,0.35)}
+.simulator-cta .cta-title{font-size:0.95rem;font-weight:700;color:var(--noir);margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.simulator-cta .cta-desc{font-size:0.82rem;color:rgba(30,30,30,0.75);line-height:1.5}
+.simulator-cta .cta-arrow{margin-left:auto;font-size:1.1rem}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0}
+.form-group{display:flex;flex-direction:column}
+.form-group.full-width{grid-column:1/-1}
+.form-label{font-size:0.78rem;font-weight:600;color:var(--noir);margin-bottom:4px;letter-spacing:0.02em}
+.form-label .required{color:var(--rouge-risque);margin-left:2px}
+.form-input{width:100%;padding:11px 14px;border:1.5px solid rgba(0,0,0,0.1);border-radius:var(--radius-btn);font-size:0.86rem;font-family:inherit;transition:border-color 0.2s}
+.form-input:focus{outline:none;border-color:var(--jaune)}
+.form-input::placeholder{color:var(--gris-texte);opacity:0.6}
+.form-input.error{border-color:var(--rouge-risque)}
+.form-select{width:100%;padding:11px 14px;border:1.5px solid rgba(0,0,0,0.1);border-radius:var(--radius-btn);font-size:0.86rem;font-family:inherit;transition:border-color 0.2s;background:#fff;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23666' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;cursor:pointer}
+.form-select:focus{outline:none;border-color:var(--jaune)}
+.form-select.error{border-color:var(--rouge-risque)}
+.form-separator{grid-column:1/-1;border:none;border-top:1px solid rgba(0,0,0,0.08);margin:8px 0}
+.form-section-title{grid-column:1/-1;font-size:0.82rem;font-weight:700;color:var(--noir);margin:4px 0 -4px 0;letter-spacing:0.02em}
+.form-textarea{resize:vertical;min-height:70px}
+.form-error{font-size:0.72rem;color:var(--rouge-risque);margin-top:3px;min-height:16px}
+.form-note{font-size:0.76rem;color:var(--gris-texte);line-height:1.5;margin-top:12px;text-align:center}
+.form-sending{opacity:0.6;pointer-events:none}
+.contact-cta-card{background:var(--noir);border-radius:var(--radius-card);padding:28px 24px;margin-bottom:16px;text-align:center}
+.contact-cta-card h3{color:var(--blanc);font-size:1.05rem;font-weight:600;margin-bottom:8px}
+.contact-cta-card p{color:rgba(255,255,255,0.7);font-size:0.84rem;margin-bottom:20px;line-height:1.6}
+.contact-btns{display:flex;gap:10px}
+.contact-btns a{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:14px 20px;border-radius:var(--radius-btn);font-size:0.86rem;font-weight:600;text-decoration:none;transition:all 0.2s;cursor:pointer}
+.btn-whatsapp{background:#25D366;color:#fff}
+.btn-whatsapp:hover{background:#1ebe57;transform:translateY(-1px)}
+.btn-contact{background:var(--jaune);color:var(--noir)}
+.btn-contact:hover{filter:brightness(0.95);transform:translateY(-1px)}
+@media(max-width:480px){.contact-btns{flex-direction:column}}
+@media(max-width:480px){.form-grid{grid-template-columns:1fr}}
+@media(max-width:480px){.app-wrapper{padding:0 12px 32px}.app-header{margin:0 -12px 20px;padding:20px 16px 16px}.card{padding:22px 18px}}
+/* ─── TIMELINE R\u00c9TROPLANNING ─── */
+.timeline{position:relative;padding:0 0 0 28px;margin:20px 0}
+.timeline::before{content:"";position:absolute;left:10px;top:0;bottom:0;width:2px;background:rgba(0,0,0,0.1)}
+.timeline-step{position:relative;padding:0 0 24px 20px}
+.timeline-step:last-child{padding-bottom:0}
+.timeline-step::before{content:"";position:absolute;left:-22px;top:4px;width:14px;height:14px;border-radius:50%;border:2px solid rgba(0,0,0,0.15);background:var(--blanc);z-index:1}
+.timeline-step.step-done::before{border-color:var(--vert-ok);background:var(--vert-ok)}
+.timeline-step.step-current::before{border-color:var(--jaune);background:var(--jaune);box-shadow:0 0 0 4px rgba(196,233,19,0.25)}
+.timeline-step.step-future::before{border-color:rgba(0,0,0,0.15);background:var(--blanc)}
+.timeline-date{font-size:0.72rem;font-weight:700;color:var(--gris-texte);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:2px}
+.timeline-title{font-size:0.88rem;font-weight:600;color:var(--noir);margin-bottom:2px}
+.timeline-desc{font-size:0.78rem;color:var(--gris-texte);line-height:1.5}
+.timeline-duration{display:inline-block;background:rgba(196,233,19,0.15);color:var(--noir);font-size:0.7rem;font-weight:600;padding:2px 8px;border-radius:10px;margin-top:4px}
+
+/* ─── RAPPORT D\u00c9TAILL\u00c9 ─── */
+.section-report{border-left:3px solid rgba(0,0,0,0.08);padding-left:16px;margin:16px 0}
+.section-report-title{font-size:0.9rem;font-weight:700;color:var(--noir);margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.section-report-score{font-size:0.78rem;font-weight:600;padding:2px 10px;border-radius:20px;display:inline-block}
+.section-report-detail{font-size:0.82rem;color:var(--gris-texte);line-height:1.7;margin-bottom:8px}
+.section-report-item{display:flex;align-items:flex-start;gap:8px;padding:6px 0;font-size:0.82rem}
+.section-report-item .item-dot{width:8px;height:8px;min-width:8px;border-radius:50%;margin-top:5px}
+.section-report-item .item-label{font-weight:500;color:var(--noir)}
+.section-report-item .item-answer{color:var(--gris-texte)}
+
+/* ─── SECTION NAV BAR ─── */
+.section-nav{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+.section-pill{display:inline-flex;align-items:center;gap:4px;padding:5px 12px;border-radius:20px;font-size:0.72rem;font-weight:600;border:1.5px solid rgba(0,0,0,0.1);background:var(--blanc);color:var(--gris-texte);cursor:pointer;transition:all 0.2s;white-space:nowrap}
+.section-pill:hover{border-color:rgba(0,0,0,0.25)}
+.section-pill.current{border-color:var(--jaune);background:var(--jaune);color:var(--noir)}
+.section-pill.done{border-color:var(--vert-ok);background:rgba(34,197,94,0.1);color:var(--vert-ok)}
+.section-pill.skipped{border-color:var(--orange-warning);background:rgba(255,165,0,0.08);color:var(--orange-warning);text-decoration:line-through;opacity:0.7}
+.section-pill .pill-icon{font-size:0.8rem}
+.btn-skip-section{background:none;border:1.5px dashed var(--orange-warning);color:var(--orange-warning);font-weight:600;font-size:0.78rem;padding:10px 16px;border-radius:var(--radius-btn);cursor:pointer;transition:all 0.2s;flex:1}
+.btn-skip-section:hover{background:rgba(255,165,0,0.08);border-style:solid}
+.skip-section-note{font-size:0.72rem;color:var(--orange-warning);text-align:center;margin-top:6px;line-height:1.4}
+/* ─── LANDING PAGE ─── */
+.landing-hero{text-align:center;padding:32px 20px 24px}
+.landing-hero .landing-icon{font-size:2.5rem;margin-bottom:12px;display:block}
+.landing-hero h2{font-size:1.3rem;line-height:1.35;font-weight:700;margin-bottom:10px;color:var(--noir)}
+.landing-hero .landing-sub{font-size:0.9rem;color:var(--gris-texte);line-height:1.65}
+.pain-card{background:var(--blanc);border-left:3px solid var(--rouge-risque);border-radius:0 var(--radius-card) var(--radius-card) 0;padding:18px 20px;margin-bottom:12px}
+.pain-card .pain-title{font-size:0.85rem;font-weight:700;color:var(--noir);margin-bottom:4px}
+.pain-card .pain-desc{font-size:0.82rem;color:var(--gris-texte);line-height:1.6}
+.value-card{background:var(--blanc);border-left:3px solid var(--vert-ok);border-radius:0 var(--radius-card) var(--radius-card) 0;padding:18px 20px;margin-bottom:12px}
+.value-card .value-icon{font-size:1.1rem;margin-right:6px}
+.value-card .value-title{font-size:0.85rem;font-weight:700;color:var(--noir);margin-bottom:4px}
+.value-card .value-desc{font-size:0.82rem;color:var(--gris-texte);line-height:1.6}
+/* ─── VIGILANCE BOX (result page) ─── */
+.vigilance-box{background:rgba(196,233,19,0.1);border:1.5px solid rgba(196,233,19,0.4);border-radius:var(--radius-card);padding:20px;margin:16px 0}
+.vigilance-box h3{font-size:0.92rem;font-weight:700;margin-bottom:8px;color:var(--noir)}
+.vigilance-box p{font-size:0.82rem;color:var(--gris-texte);line-height:1.65;margin-bottom:0}
+/* ─── COMPARISON CTA ─── */
+.compare-cta{background:linear-gradient(135deg,#f0f0f0 0%,#e8e8e8 100%);border-radius:var(--radius-card);padding:24px;text-align:center;margin:16px 0}
+.compare-cta h3{font-size:0.95rem;font-weight:700;margin-bottom:8px}
+.compare-cta p{font-size:0.82rem;color:var(--gris-texte);margin-bottom:16px;line-height:1.6}
+
+/* ─── TRANSITION SCREENS ─── */
+.transition-screen{text-align:center;padding:48px 24px 32px}
+.transition-icon{font-size:2.8rem;display:block;margin-bottom:16px;animation:popIn 0.5s cubic-bezier(0.34,1.56,0.64,1)}
+.transition-title{font-size:1.15rem;font-weight:700;color:var(--noir);margin-bottom:8px}
+.transition-desc{font-size:0.86rem;color:var(--gris-texte);line-height:1.65;max-width:420px;margin:0 auto 24px}
+.transition-badge{display:inline-flex;align-items:center;gap:6px;background:var(--jaune);color:var(--noir);font-size:0.75rem;font-weight:700;padding:6px 16px;border-radius:20px;margin-bottom:20px;letter-spacing:0.03em}
+@keyframes popIn{0%{transform:scale(0.3);opacity:0}100%{transform:scale(1);opacity:1}}
+
+/* ─── SCREEN TRANSITIONS ─── */
+.screen{display:none;opacity:0;transform:translateY(16px);transition:opacity 0.45s cubic-bezier(0.4,0,0.2,1),transform 0.45s cubic-bezier(0.4,0,0.2,1)}
+.screen.active{display:block}
+.screen.visible{opacity:1;transform:translateY(0)}
+
+/* ─── ANIMATED SCORE COUNTER ─── */
+.global-score .score-number{transition:color 0.5s}
+@keyframes countUp{0%{opacity:0;transform:scale(0.5)}100%{opacity:1;transform:scale(1)}}
+.score-animated{animation:countUp 0.6s cubic-bezier(0.34,1.56,0.64,1)}
+
+/* ─── CHOICE CARD ANIMATION ─── */
+.choice-card{transition:all 0.25s cubic-bezier(0.4,0,0.2,1)}
+.choice-card.selected{border-color:var(--jaune);background:rgba(196,233,19,0.06);transform:scale(1.015)}
+
+/* ─── CARD STAGGER ANIMATION ─── */
+@keyframes fadeSlideUp{0%{opacity:0;transform:translateY(20px)}100%{opacity:1;transform:translateY(0)}}
+.card-animate{animation:fadeSlideUp 0.4s ease forwards;opacity:0}
+
+/* ─── PDF BUTTON ─── */
+.btn-pdf{background:var(--noir);color:var(--blanc);gap:8px}
+.btn-pdf:hover{opacity:0.9;transform:translateY(-1px)}
+.btn-pdf.generating{opacity:0.6;pointer-events:none}
+
+/* ─── SCORE BAR SHIMMER ─── */
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+.score-bar-fill.shimmer{background-size:200% 100%;animation:shimmer 2s ease-in-out}
+
+@media print{.progress-bar,.btn,.nav-row,.btn-group,.compare-cta,.contact-cta-card,.btn-pdf{display:none!important}.screen:not(.screen-result){display:none!important}.screen.screen-result{display:block!important;opacity:1!important;transform:none!important}}
+</style>
+</head>
+<body>
+<div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+<div class="app-wrapper">
+  <header class="app-header">
+    <h1>L'Assistant de Visite Restaurant</h1>
+    <div class="tagline">L'outil qui transforme une visite en audit terrain structur&eacute;</div>
+  </header>
+  <main id="appMain" role="main"></main>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+"use strict";
+
+const MAX_SCORE = 3;
+const TOAST_DURATION = 2500;
+const TRANSITION_DELAY = 300;
+const ANIM_DELAY = 30;
+const BAR_ANIM_DELAY = 200;
+
+/* ─── STATE ─── */
+const state = {
+  currentScreen: 0,
+  /* Step 1: Operational profile */
+  restaurationType: null,      /* traditionnelle, rapide, street_food, gastronomique, bistronomique, franchise */
+  franchiseur: "",
+  cookingType: null,            /* classique, cuisson_douce, sans_cuisson, mixte */
+  needsExtraction: null,        /* oui, non, ne_sais_pas */
+  grandeCuisine: null,          /* oui, non, ne_sais_pas */
+  /* Step 2: Legal framework */
+  projectType: null,            /* cession_fonds, droit_bail */
+  /* Calendar / R\u00e9troplanning */
+  dateVisiteLocal: "",
+  dateRemiseCles: "",
+  dateOuverture: "",
+  /* Audit */
+  answers: {},
+  totalQuestions: 0,
+  skippedSections: {},
+  profilRaw: null,
+  nbRestosRaw: null
+};
+
+/* ─── DERIVED STATE HELPERS ─── */
+function isFranchise(){ return state.restaurationType === "franchise"; }
+function isCession(){ return state.projectType === "cession_fonds"; }
+function isDroitBail(){ return state.projectType === "droit_bail"; }
+function isFuturRestaurateur(){ return state.profilRaw === "futur_restaurateur"; }
+function needsExtraction(){ return state.needsExtraction !== "non"; }
+function isGrandeCuisine(){ return state.grandeCuisine === "oui"; }
+function hasFriture(){
+  const a = state.answers["ext_friture"];
+  return a && a.value === "friture_oui";
+}
+function isCuissonIntensive(){
+  return state.cookingType === "classique" || state.cookingType === "mixte";
+}
+
+/* ─── SECTIONS & QUESTIONS ─── */
+const sections = [
+  {
+    id: "bail", name: "Bail commercial", icon: "\u{1F4C4}",
+    questions: [
+      { id: "bail_duree", text: "Quelle est la dur\u00e9e restante du bail ?", hint: "Un bail court (<3 ans) limite la visibilit\u00e9 et peut impacter le financement bancaire.", type: "choice",
+        options: [
+          { label: "Plus de 6 ans", value: "ok", score: 3 },
+          { label: "Entre 3 et 6 ans", value: "moyen", score: 2 },
+          { label: "Moins de 3 ans", value: "risque", score: 1 },
+          { label: "Je ne sais pas encore", value: "inconnu", score: 0 }
+        ], alert_if: ["risque"], alert_msg: "Bail court : risque de non-renouvellement ou d\u2019augmentation de loyer. V\u00e9rifiez les conditions de renouvellement." },
+      { id: "bail_destination", text: "La clause de destination du bail autorise-t-elle votre activit\u00e9 de restauration ?", hint: "V\u00e9rifiez que le bail permet l\u2019activit\u00e9 envisag\u00e9e (restauration, bar, traiteur\u2026).", type: "choice",
+        infoBox: { title: "La destination du bail : un point essentiel", text: "C\u2019est l\u2019un des premiers \u00e9l\u00e9ments que Ma\u00eetre Pinet v\u00e9rifie. La clause de destination d\u00e9termine pr\u00e9cis\u00e9ment l\u2019activit\u00e9 que vous pouvez exercer dans le local. Prenons un exemple : un bail autorisant la \u00ab\u00a0restauration traditionnelle\u00a0\u00bb ne vous permet pas d\u2019exploiter une restauration rapide. Cette distinction a des cons\u00e9quences directes sur votre activit\u00e9, vos horaires, votre client\u00e8le et vos obligations r\u00e9glementaires. Un bail trop restrictif peut bloquer votre projet." },
+        options: [
+          { label: "Oui, activit\u00e9 restauration explicitement autoris\u00e9e", value: "ok", score: 3 },
+          { label: "Clause \u00abtous commerces\u00bb ou assimil\u00e9e", value: "moyen", score: 2 },
+          { label: "Non ou je ne suis pas s\u00fbr", value: "risque", score: 0 },
+          { label: "Je n\u2019ai pas encore le bail", value: "inconnu", score: 0 }
+        ], alert_if: ["risque"], alert_msg: "Clause de destination restrictive : risque de r\u00e9siliation si activit\u00e9 non conforme." },
+      { id: "bail_loyer", text: "Le loyer vous semble-t-il coh\u00e9rent avec le march\u00e9 local ?", hint: "Comparez avec les loyers pratiqu\u00e9s dans le quartier pour la m\u00eame surface.", type: "choice",
+        infoBox: { title: "Le taux d\u2019effort, c\u2019est quoi ?", text: "Le taux d\u2019effort correspond au ratio loyer annuel / chiffre d\u2019affaires HT. Il permet de mesurer le poids du loyer sur votre activit\u00e9.",
+          scale: [
+            { label: "7 \u00e0 8\u00a0% \u2014 Loyer raisonnable", color: "var(--vert-ok)" },
+            { label: "9\u00a0% \u2014 Loyer \u00e9lev\u00e9, vigilance", color: "var(--orange-warning)" },
+            { label: "10\u00a0% \u2014 Segment premium, justifiable si fort flux", color: "var(--orange-warning)" },
+            { label: "> 10\u00a0% hors centre commercial \u2014 Risque r\u00e9el", color: "var(--rouge-risque)" }
+          ] },
+        options: [
+          { label: "Oui, dans la fourchette du march\u00e9 (< 8\u00a0%)", value: "ok", score: 3 },
+          { label: "L\u00e9g\u00e8rement au-dessus (8-10\u00a0%)", value: "moyen", score: 2 },
+          { label: "Nettement au-dessus (> 10\u00a0%) ou je ne sais pas", value: "risque", score: 1 },
+          { label: "Je n\u2019ai pas encore cette information", value: "inconnu", score: 0 }
+        ], alert_if: ["risque"], alert_msg: "Taux d\u2019effort sup\u00e9rieur \u00e0 10\u00a0% hors centre commercial : risque important pour la viabilit\u00e9 financi\u00e8re." },
+      { id: "bail_charges", text: "Avez-vous le d\u00e9tail des charges locatives (provisions sur charges, taxe fonci\u00e8re, TEOM) ?", type: "choice",
+        options: [
+          { label: "Oui, d\u00e9tail clair et raisonnable", value: "ok", score: 3 },
+          { label: "Partiellement, certaines zones d\u2019ombre", value: "moyen", score: 2 },
+          { label: "Non, pas encore transmis", value: "risque", score: 1 }
+        ] },
+      { id: "bail_travaux", text: "Le bail pr\u00e9voit-il une clause sur les travaux que peut r\u00e9aliser le locataire ?", hint: "Certains baux interdisent les travaux sans accord du bailleur.", type: "choice",
+        options: [
+          { label: "Travaux libres avec information du bailleur", value: "ok", score: 3 },
+          { label: "Travaux soumis \u00e0 accord pr\u00e9alable du bailleur", value: "moyen", score: 2 },
+          { label: "Travaux tr\u00e8s limit\u00e9s ou interdits", value: "risque", score: 1 },
+          { label: "Je ne sais pas encore", value: "inconnu", score: 0 }
+        ], alert_if: ["risque"], alert_msg: "Restrictions travaux : anticipez les difficult\u00e9s pour am\u00e9nager le local." },
+      { id: "bail_franchise_clause", text: "Le bail contient-il une clause d\u2019agr\u00e9ment du franchiseur ou des restrictions li\u00e9es \u00e0 l\u2019enseigne ?",
+        hint: "Certains bailleurs imposent des restrictions sur l\u2019enseigne ou exigent l\u2019agr\u00e9ment du r\u00e9seau.",
+        type: "choice",
+        options: [
+          { label: "Pas de restriction, enseigne libre", value: "ok", score: 3 },
+          { label: "Clause d\u2019agr\u00e9ment mais g\u00e9rable", value: "moyen", score: 2 },
+          { label: "Restrictions fortes ou incompatibles", value: "risque", score: 1 },
+          { label: "Je ne sais pas", value: "inconnu", score: 0 }
+        ],
+        alert_if: ["risque"], alert_msg: "Le bail impose des restrictions d\u2019enseigne incompatibles avec votre franchise. V\u00e9rifiez avec le franchiseur et le bailleur.",
+        condition: function(){ return isFranchise(); }
+      }
+    ]
+  },
+  {
+    id: "copro", name: "Copropri\u00e9t\u00e9", icon: "\u{1F3E2}",
+    questions: [
+      { id: "copro_travaux_communs", text: "Des travaux de copropri\u00e9t\u00e9 sont-ils pr\u00e9vus (ravalement, toiture, parties communes) ?", hint: "Demandez les PV d\u2019AG des 3 derni\u00e8res ann\u00e9es.", type: "choice",
+        options: [
+          { label: "Non, rien de pr\u00e9vu", value: "ok", score: 3 },
+          { label: "Travaux mineurs pr\u00e9vus", value: "moyen", score: 2 },
+          { label: "Travaux importants vot\u00e9s ou envisag\u00e9s", value: "risque", score: 1 },
+          { label: "Je n\u2019ai pas les PV d\u2019AG", value: "inconnu", score: 0 }
+        ], alert_if: ["risque"], alert_msg: "Travaux de copropri\u00e9t\u00e9 importants pr\u00e9vus : appels de fonds \u00e0 anticiper." }
+    ]
+  },
+  {
+    id: "chalandise", name: "Zone de chalandise & Fa\u00e7ade", icon: "\u{1F4CD}",
+    questions: [
+      { id: "ch_zone_type", text: "Comment d\u00e9cririez-vous l\u2019emplacement du local ?",
+        hint: "L\u2019emplacement est d\u00e9terminant pour la client\u00e8le et le chiffre d\u2019affaires.",
+        type: "choice",
+        infoBox: { title: "La zone de chalandise en droit", text: "La jurisprudence consid\u00e8re que la zone de chalandise d\u2019un restaurant s\u2019\u00e9tend g\u00e9n\u00e9ralement entre 300 et 600\u00a0m\u00e8tres autour de l\u2019\u00e9tablissement, selon la nature de l\u2019activit\u00e9 et la densit\u00e9 urbaine. Ce p\u00e9rim\u00e8tre est \u00e9valu\u00e9 au cas par cas dans les contentieux (concurrence, bail commercial, indemnit\u00e9 d\u2019\u00e9viction). Pensez \u00e0 analyser la client\u00e8le potentielle dans ce rayon." },
+        options: [
+          { label: "Rue pi\u00e9tonne tr\u00e8s passante", value: "ok", score: 3 },
+          { label: "Rue passante (mixte pi\u00e9tons/voitures)", value: "ok", score: 3 },
+          { label: "Rue semi-passante, flux mod\u00e9r\u00e9", value: "moyen", score: 2 },
+          { label: "Rue calme ou secondaire", value: "risque", score: 1 },
+          { label: "Je ne sais pas encore", value: "inconnu", score: 0 }
+        ] },
+      { id: "ch_largeur_rue", text: "Quelle est la largeur de la rue et des trottoirs devant le local ?",
+        hint: "Une rue large avec de grands trottoirs facilite l\u2019installation d\u2019une terrasse et la visibilit\u00e9.",
+        type: "choice",
+        options: [
+          { label: "Rue large, trottoirs spacieux (\u2265 3\u00a0m)", value: "ok", score: 3 },
+          { label: "Rue moyenne, trottoirs corrects (1,5 \u00e0 3\u00a0m)", value: "moyen", score: 2 },
+          { label: "Rue \u00e9troite, trottoirs \u00e9troits (< 1,5\u00a0m)", value: "risque", score: 1 },
+          { label: "Je ne sais pas", value: "inconnu", score: 0 }
+        ] },
+      { id: "ch_flux_pieton", text: "Quel est le flux pi\u00e9ton observ\u00e9 devant le local (en heure de pointe) ?",
+        hint: "Observez le flux aux heures de d\u00e9jeuner (12h-14h) et en soir\u00e9e (19h-21h).",
+        type: "choice",
+        options: [
+          { label: "Flux pi\u00e9ton important et r\u00e9gulier", value: "ok", score: 3 },
+          { label: "Flux mod\u00e9r\u00e9, variable selon les heures", value: "moyen", score: 2 },
+          { label: "Flux faible ou tr\u00e8s irr\u00e9gulier", value: "risque", score: 1 },
+          { label: "Je n\u2019ai pas encore observ\u00e9", value: "inconnu", score: 0 }
+        ] },
+      { id: "ch_terrasse_possible", text: "Y a-t-il la possibilit\u00e9 physique d\u2019installer une terrasse devant le local ?",
+        hint: "La terrasse peut repr\u00e9senter 20 \u00e0 40\u00a0% du chiffre d\u2019affaires en restauration. \u00c9valuez le potentiel de l\u2019espace ind\u00e9pendamment de l\u2019autorisation administrative.",
+        type: "choice",
+        infoBox: { title: "Convention d\u2019occupation du domaine public (AOT)", text: "L\u2019installation d\u2019une terrasse sur un trottoir n\u00e9cessite une autorisation d\u2019occupation temporaire du domaine public (AOT), d\u00e9livr\u00e9e par la mairie. Cette convention est personnelle, pr\u00e9caire et r\u00e9vocable : elle n\u2019est pas cessible dans le cadre d\u2019une cession de fonds de commerce. Le repreneur devra syst\u00e9matiquement d\u00e9poser une nouvelle demande aupr\u00e8s de la mairie. La question ici porte sur la faisabilit\u00e9 physique (largeur de trottoir, espace disponible, r\u00e8gles locales), ind\u00e9pendamment de l\u2019autorisation qui devra \u00eatre obtenue dans tous les cas." },
+        options: [
+          { label: "Oui, espace suffisant et terrasse r\u00e9aliste", value: "ok", score: 3 },
+          { label: "Possible mais espace limit\u00e9 ou contraintes locales", value: "moyen", score: 2 },
+          { label: "Impossible (trottoir trop \u00e9troit, interdiction)", value: "risque", score: 1 },
+          { label: "Je ne sais pas", value: "inconnu", score: 0 }
+        ] },
+      { id: "ch_terrasse_taille", text: "Quelle serait la taille potentielle de la terrasse ?",
+        hint: "Estimez le nombre de couverts suppl\u00e9mentaires possibles.",
+        type: "choice",
+        condition: function(){ return state.answers["ch_terrasse_possible"] && state.answers["ch_terrasse_possible"].value !== "risque"; },
+        options: [
+          { label: "Grande terrasse (> 20 couverts)", value: "ok", score: 3 },
+          { label: "Terrasse moyenne (10 \u00e0 20 couverts)", value: "moyen", score: 2 },
+          { label: "Petite terrasse (< 10 couverts)", value: "moyen", score: 2 },
+          { label: "Je ne sais pas encore", value: "inconnu", score: 0 }
+        ] },
+      { id: "ch_vitrine", text: "Comment \u00e9valuez-vous la vitrine du local ?",
+        hint: "Une grande vitrine bien entretenue est un atout commercial majeur.",
+        type: "choice",
+        options: [
+          { label: "Grande vitrine en bon \u00e9tat, bonne visibilit\u00e9", value: "ok", score: 3 },
+          { label: "Vitrine correcte mais \u00e0 rafra\u00eechir", value: "moyen", score: 2 },
+          { label: "Petite vitrine ou en mauvais \u00e9tat", value: "risque", score: 1 },
+          { label: "Pas de vitrine ou je n\u2019ai pas v\u00e9rifi\u00e9", value: "inconnu", score: 0 }
+        ] },
+      { id: "ch_facade", text: "Quel est l\u2019\u00e9tat de la fa\u00e7ade du local ?",
+        type: "choice",
+        options: [
+          { label: "Fa\u00e7ade en bon \u00e9tat, attractive", value: "ok", score: 3 },
+          { label: "Fa\u00e7ade correcte, rafra\u00eechissement l\u00e9ger", value: "moyen", score: 2 },
+          { label: "Fa\u00e7ade d\u00e9grad\u00e9e, travaux importants \u00e0 pr\u00e9voir", value: "risque", score: 1 }
+        ] },
+      { id: "ch_store", text: "Le local dispose-t-il d\u2019un store-banne (auvent r\u00e9tractable) ?",
+        hint: "Un store-banne prot\u00e8ge la terrasse et la vitrine, et renforce la visibilit\u00e9 de l\u2019enseigne.",
+        type: "choice",
+        options: [
+          { label: "Oui, store-banne en bon \u00e9tat", value: "ok", score: 3 },
+          { label: "Oui, mais \u00e0 r\u00e9nover ou remplacer", value: "moyen", score: 2 },
+          { label: "Non, mais installation possible", value: "moyen", score: 2 },
+          { label: "Non et installation compliqu\u00e9e", value: "risque", score: 1 }
+        ] },
+      { id: "ch_enseigne", text: "Y a-t-il une enseigne visible ou la possibilit\u00e9 d\u2019en installer une ?",
+        hint: "L\u2019installation d\u2019une enseigne peut n\u00e9cessiter l\u2019accord de la copropri\u00e9t\u00e9 et une autorisation administrative.",
+        type: "choice",
+        infoBox: { title: "Autorisation d\u2019enseigne", text: "L\u2019installation d\u2019une enseigne n\u00e9cessite g\u00e9n\u00e9ralement : 1) l\u2019autorisation de la copropri\u00e9t\u00e9 si le local est en copropri\u00e9t\u00e9, 2) une d\u00e9claration pr\u00e9alable en mairie (art. L.581-18 du Code de l\u2019environnement). V\u00e9rifiez \u00e9galement le r\u00e8glement local de publicit\u00e9 (RLP)." },
+        options: [
+          { label: "Enseigne existante en bon \u00e9tat", value: "ok", score: 3 },
+          { label: "Pas d\u2019enseigne mais installation possible (autorisations ok)", value: "moyen", score: 2 },
+          { label: "Pas d\u2019enseigne et installation incertaine ou compliqu\u00e9e", value: "risque", score: 1 },
+          { label: "Je ne sais pas", value: "inconnu", score: 0 }
+        ] },
+      { id: "ch_concurrence", text: "Quel est le niveau de concurrence directe dans la zone de chalandise (300-600\u00a0m) ?",
+        hint: "Comptez les restaurants similaires \u00e0 votre concept dans un rayon de 300 \u00e0 600\u00a0m.",
+        type: "choice",
+        options: [
+          { label: "Peu de concurrence directe, zone favorable", value: "ok", score: 3 },
+          { label: "Concurrence mod\u00e9r\u00e9e mais diff\u00e9renciable", value: "moyen", score: 2 },
+          { label: "Forte concurrence directe sur le m\u00eame segment", value: "risque", score: 1 },
+          { label: "Je n\u2019ai pas encore analys\u00e9", value: "inconnu", score: 0 }
+        ] }
+    ]
+  },
+  {
+    id: "securite", name: "S\u00e9curit\u00e9 & ERP", icon: "\u{1F512}",
+    questions: [
+      { id: "erp_categorie", text: "Connaissez-vous la cat\u00e9gorie ERP du local ?", hint: "La cat\u00e9gorie d\u00e9pend de la capacit\u00e9 d\u2019accueil et d\u00e9termine les obligations de s\u00e9curit\u00e9.", type: "choice",
+        options: [
+          { label: "Oui, cat\u00e9gorie 5 (petit ERP)", value: "ok", score: 3 },
+          { label: "Oui, cat\u00e9gorie 1 \u00e0 4 (obligations renforc\u00e9es)", value: "moyen", score: 2 },
+          { label: "Non, je ne connais pas la cat\u00e9gorie", value: "inconnu", score: 0 }
+        ] },
+      { id: "erp_commission", text: "Quel est le dernier avis de la commission de s\u00e9curit\u00e9 ?", type: "choice",
+        options: [
+          { label: "Avis favorable r\u00e9cent (< 3 ans)", value: "ok", score: 3 },
+          { label: "Avis favorable ancien (> 3 ans)", value: "moyen", score: 2 },
+          { label: "Avis d\u00e9favorable ou pas d\u2019information", value: "risque", score: 0 },
+          { label: "Non applicable (cat. 5)", value: "ok", score: 3 }
+        ], alert_if: ["risque"], alert_msg: "Commission de s\u00e9curit\u00e9 d\u00e9favorable : mise en conformit\u00e9 obligatoire avant ouverture." },
+      { id: "erp_secours", text: "Les issues de secours sont-elles conformes et d\u00e9gag\u00e9es ?", type: "choice",
+        options: [
+          { label: "Oui, conformes et accessibles", value: "ok", score: 3 },
+          { label: "Partiellement, am\u00e9nagements n\u00e9cessaires", value: "moyen", score: 2 },
+          { label: "Non ou je n\u2019ai pas v\u00e9rifi\u00e9", value: "risque", score: 1 }
+        ] },
+      { id: "erp_accessibilite", text: "Le local est-il accessible aux personnes \u00e0 mobilit\u00e9 r\u00e9duite (PMR) ?", hint: "Obligation l\u00e9gale pour les ERP \u2014 des d\u00e9rogations existent sous conditions.", type: "choice",
+        options: [
+          { label: "Oui, conforme ou Ad\u2019AP en cours", value: "ok", score: 3 },
+          { label: "Partiellement, travaux n\u00e9cessaires", value: "moyen", score: 2 },
+          { label: "Non conforme, pas de d\u00e9rogation", value: "risque", score: 1 },
+          { label: "Je ne sais pas", value: "inconnu", score: 0 }
+        ] },
+      { id: "erp_grande_cuisine", text: "La puissance totale des appareils de cuisson d\u00e9passe-t-elle 20\u00a0kW ?",
+        hint: "Au-del\u00e0 de 20\u00a0kW, le local est class\u00e9 \u00abgrande cuisine\u00bb (GC) avec des obligations suppl\u00e9mentaires : dispositif d\u2019arr\u00eat d\u2019urgence, extinction automatique, ventilation renforc\u00e9e.",
+        type: "choice",
+        infoBox: { title: "Seuil \u00abgrande cuisine\u00bb (GC)", text: "L\u2019arr\u00eat\u00e9 du 25 juin 1980 impose des mesures sp\u00e9cifiques pour les locaux dont la puissance totale des appareils de cuisson ou de remise en temp\u00e9rature d\u00e9passe 20\u00a0kW. Cela inclut notamment un syst\u00e8me d\u2019extinction automatique, un dispositif d\u2019arr\u00eat d\u2019urgence de l\u2019alimentation en \u00e9nergie, et un conduit d\u2019extraction conforme." },
+        options: [
+          { label: "Oui, puissance > 20\u00a0kW (grande cuisine)", value: "risque", score: 1 },
+          { label: "Non, puissance \u2264 20\u00a0kW", value: "ok", score: 3 },
+          { label: "Je ne sais pas encore", value: "inconnu", score: 0 }
+        ],
+        alert_if: ["risque"], alert_msg: "Grande cuisine (> 20\u00a0kW) : obligations renforc\u00e9es en mati\u00e8re de s\u00e9curit\u00e9 incendie, ventilation et extinction automatique.",
+        condition: function(){ return isGrandeCuisine() || state.grandeCuisine === "ne_sais_pas"; }
+      }
+    ]
+  },
+  {
+    id: "extraction", name: "Extraction & Ventilation", icon: "\u{1F4A8}",
+    condition: function(){ return needsExtraction(); },
+    questions: [
+      { id: "ext_type", text: "Quel est le type de conduite d\u2019extraction ?", hint: "L\u2019extraction doit id\u00e9alement \u00eatre en conduite ext\u00e9rieure jusqu\u2019en toiture.", type: "choice",
+        infoBox: { title: "Pourquoi c\u2019est important ?", text: "L\u2019extraction est l\u2019un des points les plus sensibles en restauration. Le conduit doit id\u00e9alement d\u00e9boucher en toiture (obligation RSD) et se situer \u00e0 plus de 8\u00a0m\u00e8tres de toute fen\u00eatre. Un conduit trop proche des ouvrants ou ne d\u00e9bouchant pas en toiture expose \u00e0 des plaintes de voisinage et \u00e0 une non-conformit\u00e9 administrative pouvant emp\u00eacher l\u2019exploitation." },
+        options: [
+          { label: "Conduite ext\u00e9rieure en toiture", value: "ok", score: 3 },
+          { label: "Conduite int\u00e9rieure (gaine dans l\u2019immeuble)", value: "moyen", score: 2 },
+          { label: "Pas de conduite d\u2019extraction visible", value: "risque", score: 0 },
+          { label: "Je ne sais pas", value: "inconnu", score: 0 }
+        ], alert_if: ["risque"], alert_msg: "Absence d\u2019extraction : point bloquant majeur." },
+      { id: "ext_chemisage", text: "La conduite d\u2019extraction est-elle chemis\u00e9e (tubage inox int\u00e9rieur) ?", hint: "Le chemisage en inox prot\u00e8ge le conduit et facilite l\u2019entretien.", type: "choice",
+        options: [
+          { label: "Oui, conduite chemis\u00e9e inox", value: "ok", score: 3 },
+          { label: "Non chemis\u00e9e mais en bon \u00e9tat", value: "moyen", score: 2 },
+          { label: "Non chemis\u00e9e et \u00e9tat incertain", value: "risque", score: 1 },
+          { label: "Je ne sais pas", value: "inconnu", score: 0 }
+        ] },
+      { id: "ext_diametre", text: "Quel est le diam\u00e8tre du conduit d\u2019extraction ?", hint: "Le diam\u00e8tre conditionne directement le type de cuisine exploitable.", type: "choice",
+        infoBox: { title: "Rep\u00e8res diam\u00e8tre / activit\u00e9",
+          scale: [
+            { label: "200\u00a0mm \u2014 Cuisine l\u00e9g\u00e8re (sandwicherie, saladerie)", color: "var(--vert-ok)" },
+            { label: "300\u00a0mm \u2014 Cuisine classique, cuisson mod\u00e9r\u00e9e", color: "var(--vert-ok)" },
+            { label: "400\u00a0mm \u2014 Friture ou cuisine intensive", color: "var(--orange-warning)" },
+            { label: "< 200\u00a0mm \u2014 Insuffisant pour la plupart des activit\u00e9s", color: "var(--rouge-risque)" }
+          ] },
+        options: [
+          { label: "400\u00a0mm ou plus", value: "ok", score: 3 },
+          { label: "300\u00a0mm", value: "moyen", score: 2 },
+          { label: "200\u00a0mm", value: "moyen", score: 2 },
+          { label: "Moins de 200\u00a0mm ou je ne sais pas", value: "risque", score: 1 }
+        ] },
+      { id: "ext_friture", text: "Allez-vous faire de la friture dans votre activit\u00e9 ?", hint: "La friture impose un diam\u00e8tre minimum de 300-400\u00a0mm et un syst\u00e8me de filtration renforc\u00e9.", type: "choice",
+        options: [
+          { label: "Oui, friture pr\u00e9vue", value: "friture_oui", score: 2 },
+          { label: "Non, pas de friture", value: "ok", score: 3 },
+          { label: "Je ne sais pas encore", value: "inconnu", score: 1 }
+        ], alert_if: ["friture_oui"], alert_msg: "Friture pr\u00e9vue : v\u00e9rifiez diam\u00e8tre \u2265 300\u00a0mm et filtration adapt\u00e9e.",
+        condition: function(){ return isCuissonIntensive(); }
+      },
+      { id: "ext_rsd", text: "Disposez-vous du certificat de conformit\u00e9 RSD et du carnet d\u2019entretien ?", type: "choice",
+        options: [
+          { label: "Oui, les deux documents \u00e0 jour", value: "ok", score: 3 },
+          { label: "Carnet d\u2019entretien uniquement", value: "moyen", score: 2 },
+          { label: "Aucun document disponible", value: "risque", score: 0 },
+          { label: "Je ne sais pas", value: "inconnu", score: 0 }
+        ], alert_if: ["risque"], alert_msg: "Absence de certificat RSD : extraction non certifi\u00e9e conforme." },
+    ]
+  },
+  {
+    id: "sanitaire", name: "Sanitaire & Hygi\u00e8ne", icon: "\u{1F9FC}",
+    questions: [
+      { id: "san_marche_avant", text: "La cuisine respecte-t-elle le principe de la marche en avant ?", hint: "Les flux (propre/sale, chaud/froid) ne doivent pas se croiser.", type: "choice",
+        options: [
+          { label: "Oui, flux bien s\u00e9par\u00e9s", value: "ok", score: 3 },
+          { label: "Partiellement, am\u00e9nagements possibles", value: "moyen", score: 2 },
+          { label: "Non, refonte n\u00e9cessaire", value: "risque", score: 1 },
+          { label: "Je n\u2019ai pas pu v\u00e9rifier", value: "inconnu", score: 0 }
+        ] },
+      { id: "san_bac_graisse", text: "Un bac \u00e0 graisse est-il install\u00e9 et entretenu ?", type: "choice",
+        options: [
+          { label: "Oui, avec contrat d\u2019entretien", value: "ok", score: 3 },
+          { label: "Oui, mais entretien \u00e0 v\u00e9rifier", value: "moyen", score: 2 },
+          { label: "Non install\u00e9", value: "risque", score: 1 },
+          { label: "Je ne sais pas", value: "inconnu", score: 0 }
+        ] },
+      { id: "san_vestiaires", text: "Le local dispose-t-il de vestiaires et sanitaires pour le personnel ?", type: "choice",
+        options: [
+          { label: "Oui, conformes", value: "ok", score: 3 },
+          { label: "Oui, mais \u00e0 remettre aux normes", value: "moyen", score: 2 },
+          { label: "Non", value: "risque", score: 1 }
+        ] }
+    ]
+  },
+  {
+    id: "travaux", name: "Travaux & \u00c9tat du local", icon: "\u{1F527}",
+    questions: [
+      { id: "trav_etat", text: "Quel est l\u2019\u00e9tat g\u00e9n\u00e9ral du local (sols, murs, plafonds, plomberie, \u00e9lectricit\u00e9) ?", type: "choice",
+        options: [
+          { label: "Bon \u00e9tat, peu de travaux", value: "ok", score: 3 },
+          { label: "Correct, rafra\u00eechissement n\u00e9cessaire", value: "moyen", score: 2 },
+          { label: "Travaux importants n\u00e9cessaires", value: "risque", score: 1 }
+        ] },
+      { id: "trav_estimation", text: "Avez-vous une estimation du co\u00fbt des travaux n\u00e9cessaires ?", hint: "Consultez un architecte ou ma\u00eetre d\u2019\u0153uvre sp\u00e9cialis\u00e9 en restauration.", type: "choice",
+        options: [
+          { label: "Oui, devis ou estimation r\u00e9aliste", value: "ok", score: 3 },
+          { label: "Estimation approximative", value: "moyen", score: 2 },
+          { label: "Pas encore d\u2019estimation", value: "risque", score: 1 }
+        ] },
+      { id: "trav_autorisation", text: "Les travaux n\u00e9cessitent-ils des autorisations sp\u00e9cifiques ?", hint: "Permis de construire, d\u00e9claration pr\u00e9alable, accord copropri\u00e9t\u00e9, accord bailleur\u2026", type: "choice",
+        options: [
+          { label: "Travaux l\u00e9gers, pas d\u2019autorisation", value: "ok", score: 3 },
+          { label: "Autorisations n\u00e9cessaires mais anticip\u00e9es", value: "moyen", score: 2 },
+          { label: "Autorisations complexes ou incertaines", value: "risque", score: 1 },
+          { label: "Je ne sais pas encore", value: "inconnu", score: 0 }
+        ] },
+      { id: "trav_delais", text: "Les d\u00e9lais de travaux sont-ils compatibles avec votre calendrier d\u2019ouverture ?", type: "choice",
+        options: [
+          { label: "Oui, planning r\u00e9aliste", value: "ok", score: 3 },
+          { label: "Serr\u00e9 mais faisable", value: "moyen", score: 2 },
+          { label: "Incompatible ou incertain", value: "risque", score: 1 },
+          { label: "Pas encore \u00e9valu\u00e9", value: "inconnu", score: 0 }
+        ] },
+      { id: "trav_sous_sol", text: "Le local dispose-t-il d\u2019un sous-sol ?",
+        hint: "Le sous-sol est souvent utilis\u00e9 pour le stockage, les chambres froides ou les vestiaires.",
+        type: "choice",
+        options: [
+          { label: "Oui, sous-sol en bon \u00e9tat et exploitable", value: "ok", score: 3 },
+          { label: "Oui, mais travaux \u00e0 pr\u00e9voir (humidit\u00e9, \u00e9lectricit\u00e9)", value: "moyen", score: 2 },
+          { label: "Non, pas de sous-sol", value: "ok", score: 2 },
+          { label: "Oui, mais inutilisable en l\u2019\u00e9tat", value: "risque", score: 1 }
+        ] },
+      { id: "trav_chambre_froide", text: "Le local dispose-t-il d\u2019une chambre froide ?",
+        hint: "La chambre froide est indispensable pour le stockage des denr\u00e9es p\u00e9rissables en restauration.",
+        type: "choice",
+        options: [
+          { label: "Oui, chambre froide fonctionnelle", value: "ok", score: 3 },
+          { label: "Oui, mais \u00e0 r\u00e9viser ou remplacer", value: "moyen", score: 2 },
+          { label: "Non, \u00e0 installer", value: "risque", score: 1 },
+          { label: "Je ne sais pas", value: "inconnu", score: 0 }
+        ] },
+      { id: "trav_chambre_chaude", text: "Le local dispose-t-il d\u2019un espace de pousse (chambre de fermentation) ?",
+        hint: "Indispensable pour les pizzerias et boulangeries. Permet la fermentation contr\u00f4l\u00e9e de la p\u00e2te.",
+        type: "choice",
+        condition: function(){ return state.restaurationType === "traditionnelle" || state.restaurationType === "rapide" || state.restaurationType === "franchise"; },
+        options: [
+          { label: "Oui, espace de pousse existant", value: "ok", score: 3 },
+          { label: "Non, mais installation possible", value: "moyen", score: 2 },
+          { label: "Non et espace insuffisant", value: "risque", score: 1 },
+          { label: "Non concern\u00e9 / pas besoin", value: "ok", score: 3 }
+        ] },
+      { id: "trav_comptoir", text: "Le local dispose-t-il d\u2019un comptoir / bar ?",
+        hint: "L\u2019installation d\u2019un comptoir peut repr\u00e9senter un co\u00fbt important si le local n\u2019en est pas \u00e9quip\u00e9.",
+        type: "choice",
+        options: [
+          { label: "Oui, comptoir existant en bon \u00e9tat", value: "ok", score: 3 },
+          { label: "Oui, mais \u00e0 r\u00e9nover", value: "moyen", score: 2 },
+          { label: "Non, comptoir \u00e0 cr\u00e9er (co\u00fbt \u00e0 pr\u00e9voir)", value: "risque", score: 1 },
+          { label: "Pas besoin de comptoir", value: "ok", score: 3 }
+        ] },
+      { id: "trav_franchise_cahier", text: "Les travaux sont-ils conformes au cahier des charges du franchiseur ?",
+        hint: "Le franchiseur impose g\u00e9n\u00e9ralement des normes d\u2019am\u00e9nagement pr\u00e9cises (enseigne, mobilier, mat\u00e9riaux, agencement).",
+        type: "choice",
+        options: [
+          { label: "Oui, cahier des charges respect\u00e9", value: "ok", score: 3 },
+          { label: "Partiellement, adaptations n\u00e9cessaires", value: "moyen", score: 2 },
+          { label: "Non conforme ou pas de cahier des charges re\u00e7u", value: "risque", score: 1 }
+        ],
+        alert_if: ["risque"], alert_msg: "Travaux non conformes au cahier des charges du franchiseur : risque de refus d\u2019agr\u00e9ment du local.",
+        condition: function(){ return isFranchise(); }
+      }
+    ]
+  },
+  {
+    id: "materiel", name: "Mat\u00e9riel & Stock", icon: "\u{1F373}",
+    questions: [
+      { id: "mat_concept", text: "Reprenez-vous le concept existant du c\u00e9dant ou changez-vous compl\u00e8tement de concept ?",
+        hint: "En cession de fonds, vous rachetez un ensemble d\u2019actifs (mat\u00e9riel, client\u00e8le, bail\u2026). Le concept peut \u00eatre modifi\u00e9 librement apr\u00e8s la reprise.",
+        type: "choice",
+        options: [
+          { label: "Je reprends le m\u00eame concept ou tr\u00e8s proche", value: "ok", score: 3 },
+          { label: "Je modifie partiellement le concept", value: "moyen", score: 2 },
+          { label: "Je change compl\u00e8tement de concept", value: "risque", score: 1 }
+        ], alert_if: ["risque"], alert_msg: "Changement de concept : r\u00e9\u00e9valuez mat\u00e9riel et client\u00e8le dans le prix de cession.",
+        condition: function(){ return isCession(); } },
+      { id: "mat_type", text: "Quel type de mat\u00e9riel est compris dans la cession ?", type: "choice",
+        options: [
+          { label: "Gros \u00e9quipement complet", value: "ok", score: 3 },
+          { label: "Gros \u00e9quipement partiel + petit mat\u00e9riel", value: "moyen", score: 2 },
+          { label: "Essentiellement du petit mat\u00e9riel", value: "risque", score: 1 },
+          { label: "Je n\u2019ai pas encore l\u2019inventaire", value: "inconnu", score: 0 }
+        ], condition: function(){ return isCession(); } },
+      { id: "mat_etat", text: "Quel est l\u2019\u00e9tat g\u00e9n\u00e9ral du mat\u00e9riel ?", type: "choice",
+        options: [
+          { label: "Mat\u00e9riel r\u00e9cent et en bon \u00e9tat", value: "ok", score: 3 },
+          { label: "Mat\u00e9riel fonctionnel mais vieillissant", value: "moyen", score: 2 },
+          { label: "Mat\u00e9riel v\u00e9tuste, remplacement \u00e0 pr\u00e9voir", value: "risque", score: 1 },
+          { label: "Je ne sais pas", value: "inconnu", score: 0 }
+        ], condition: function(){ return isCession(); } },
+      { id: "mat_credit_bail", text: "Certains \u00e9quipements sont-ils en cr\u00e9dit-bail (leasing) ?",
+        hint: "Un mat\u00e9riel en cr\u00e9dit-bail n\u2019appartient pas au c\u00e9dant.",
+        type: "choice",
+        options: [
+          { label: "Non, tout en propri\u00e9t\u00e9", value: "ok", score: 3 },
+          { label: "Oui, quelques \u00e9quipements identifi\u00e9s", value: "moyen", score: 2 },
+          { label: "Oui, \u00e9quipements importants en cr\u00e9dit-bail", value: "risque", score: 1 },
+          { label: "Je ne sais pas", value: "inconnu", score: 0 }
+        ], alert_if: ["risque"], alert_msg: "Cr\u00e9dit-bail sur \u00e9quipements importants : hors actif c\u00e9d\u00e9.",
+        condition: function(){ return isCession(); } },
+      { id: "mat_inventaire", text: "La liste du mat\u00e9riel est-elle d\u00e9taill\u00e9e et valoris\u00e9e ?", type: "choice",
+        options: [
+          { label: "Oui, inventaire complet avec \u00e9tat et valeur", value: "ok", score: 3 },
+          { label: "Liste partielle, sans valorisation", value: "moyen", score: 2 },
+          { label: "Pas de liste", value: "risque", score: 1 }
+        ], condition: function(){ return isCession(); } },
+      { id: "mat_stock", text: "Le stock de marchandises est-il compris dans le prix de cession ?",
+        hint: "En cession de fonds, le stock est g\u00e9n\u00e9ralement pay\u00e9 en sus.", type: "choice",
+        options: [
+          { label: "Oui, stock inclus dans le prix", value: "ok", score: 3 },
+          { label: "Stock pay\u00e9 en sus, montant estim\u00e9", value: "moyen", score: 2 },
+          { label: "Stock pay\u00e9 en sus, montant non d\u00e9fini", value: "risque", score: 1 },
+          { label: "Je ne sais pas", value: "inconnu", score: 0 }
+        ], condition: function(){ return isCession(); } },
+      { id: "mat_franchise_equipement", text: "Le mat\u00e9riel existant est-il compatible avec les exigences du franchiseur ?",
+        hint: "Le franchiseur peut imposer des marques, mod\u00e8les ou fournisseurs sp\u00e9cifiques.",
+        type: "choice",
+        options: [
+          { label: "Oui, mat\u00e9riel conforme aux exigences", value: "ok", score: 3 },
+          { label: "Partiellement, quelques remplacements \u00e0 pr\u00e9voir", value: "moyen", score: 2 },
+          { label: "Non, remplacement important n\u00e9cessaire", value: "risque", score: 1 },
+          { label: "Je ne sais pas", value: "inconnu", score: 0 }
+        ],
+        alert_if: ["risque"], alert_msg: "Mat\u00e9riel non conforme aux exigences du franchiseur : budget de remplacement \u00e0 pr\u00e9voir.",
+        condition: function(){ return isFranchise() && isCession(); }
+      }
+    ]
+  },
+  {
+    id: "operationnel", name: "Op\u00e9rationnel & Juridique", icon: "\u2696\uFE0F",
+    questions: [
+      { id: "op_licence", text: "Le local dispose-t-il d\u2019une licence de d\u00e9bit de boissons ?", type: "choice",
+        options: [
+          { label: "Oui, licence IV", value: "ok", score: 3 },
+          { label: "Oui, licence III ou licence restaurant", value: "moyen", score: 2 },
+          { label: "Non, pas de licence", value: "risque", score: 1 },
+          { label: "Je ne sais pas", value: "inconnu", score: 0 }
+        ], condition: function(){ return isCession(); } },
+      { id: "op_terrasse", text: "Le restaurant dispose-t-il d\u2019une terrasse avec convention d\u2019occupation ?", type: "choice",
+        options: [
+          { label: "Oui, convention en cours", value: "ok", score: 3 },
+          { label: "Oui, mais convention \u00e0 renouveler", value: "moyen", score: 2 },
+          { label: "Pas de terrasse", value: "ok", score: 2 },
+          { label: "Terrasse sans convention", value: "risque", score: 0 }
+        ], condition: function(){ return isCession(); } },
+      { id: "op_salaries", text: "Y a-t-il des salari\u00e9s \u00e0 reprendre (art. L.1224-1 C. trav.) ?", type: "choice",
+        options: [
+          { label: "Oui, liste et contrats transmis", value: "ok", score: 3 },
+          { label: "Oui, mais informations partielles", value: "moyen", score: 2 },
+          { label: "Pas de salari\u00e9", value: "ok", score: 3 },
+          { label: "Je ne sais pas", value: "inconnu", score: 0 }
+        ], condition: function(){ return isCession(); } },
+      { id: "op_contrats", text: "Avez-vous la liste des contrats en cours ?", type: "choice",
+        options: [
+          { label: "Oui, liste compl\u00e8te transmise", value: "ok", score: 3 },
+          { label: "Partiellement", value: "moyen", score: 2 },
+          { label: "Non", value: "risque", score: 1 }
+        ], condition: function(){ return isCession(); } },
+      { id: "op_nantissement", text: "Existe-t-il un nantissement sur le fonds de commerce ?", type: "choice",
+        infoBox: { title: "Qu\u2019est-ce qu\u2019un nantissement ?", text: "Le nantissement est une s\u00fbret\u00e9 prise par un cr\u00e9ancier (g\u00e9n\u00e9ralement une banque) sur le fonds de commerce. Il fonctionne comme une hypoth\u00e8que : si le d\u00e9biteur ne rembourse pas, le cr\u00e9ancier peut faire saisir et vendre le fonds. En cas de cession, les cr\u00e9anciers inscrits doivent \u00eatre d\u00e9sint\u00e9ress\u00e9s ou donner mainlev\u00e9e. L\u2019\u00e9tat des nantissements est consultable sur Infogreffe pour environ 50\u00a0\u20ac. C\u2019est au c\u00e9dant de fournir ce document et de justifier de la situation du fonds." },
+        options: [
+          { label: "Non, fonds libre", value: "ok", score: 3 },
+          { label: "Oui, mais identifi\u00e9 et g\u00e9rable", value: "moyen", score: 2 },
+          { label: "Oui, situation complexe", value: "risque", score: 0 },
+          { label: "Je ne sais pas", value: "inconnu", score: 0 }
+        ], alert_if: ["risque"], alert_msg: "Nantissement : peut bloquer la cession.",
+        condition: function(){ return isCession(); } },
+      { id: "op_franchise_contrat", text: "Avez-vous v\u00e9rifi\u00e9 la compatibilit\u00e9 entre le contrat de franchise et le bail commercial ?",
+        hint: "Le contrat de franchise peut imposer une dur\u00e9e minimale de bail, une clause de non-concurrence, ou des conditions de sortie sp\u00e9cifiques.",
+        type: "choice",
+        options: [
+          { label: "Oui, les deux contrats sont compatibles", value: "ok", score: 3 },
+          { label: "En cours de v\u00e9rification", value: "moyen", score: 2 },
+          { label: "Non v\u00e9rifi\u00e9 ou incompatibilit\u00e9s d\u00e9tect\u00e9es", value: "risque", score: 1 },
+          { label: "Je ne sais pas", value: "inconnu", score: 0 }
+        ],
+        alert_if: ["risque"], alert_msg: "Incompatibilit\u00e9 bail / contrat de franchise : risque juridique majeur. Faites v\u00e9rifier par un avocat.",
+        condition: function(){ return isFranchise(); }
+      },
+      { id: "op_franchise_dip", text: "Avez-vous re\u00e7u le DIP (Document d\u2019Information Pr\u00e9contractuel) du franchiseur ?",
+        hint: "Le DIP est obligatoire (art. L.330-3 C. com.) et doit \u00eatre remis au moins 20 jours avant la signature du contrat de franchise.",
+        type: "choice",
+        options: [
+          { label: "Oui, DIP re\u00e7u et analys\u00e9", value: "ok", score: 3 },
+          { label: "Oui, mais pas encore analys\u00e9 en d\u00e9tail", value: "moyen", score: 2 },
+          { label: "Non, pas encore re\u00e7u", value: "risque", score: 0 }
+        ],
+        alert_if: ["risque"], alert_msg: "DIP non re\u00e7u : obligation l\u00e9gale du franchiseur. Ne signez rien avant r\u00e9ception et analyse compl\u00e8te.",
+        condition: function(){ return isFranchise(); }
+      }
+    ]
+  }
+];
+
+/* ─── DOM HELPERS ─── */
+function createEl(tag, cls){ const e = document.createElement(tag); if(cls) e.className = cls; return e; }
+function createText(tag, cls, txt){ const e = createEl(tag, cls); e.textContent = txt; return e; }
+function showToast(msg){ const t = document.getElementById("toast"); t.textContent = msg; t.classList.add("show"); setTimeout(function(){ t.classList.remove("show"); }, TOAST_DURATION); }
+function updateProgress(pct){ document.getElementById("progressFill").style.width = pct + "%"; }
+function getScoreColor(pct){ return pct >= 70 ? "var(--vert-ok)" : pct >= 40 ? "var(--orange-warning)" : "var(--rouge-risque)"; }
+
+function copyText(text){
+  if(navigator.clipboard && typeof navigator.clipboard.writeText === "function"){
+    navigator.clipboard.writeText(text).then(function(){ showToast("Email copi\u00e9 dans le presse-papiers"); }, function(){ fallbackCopy(text); });
+  } else { fallbackCopy(text); }
+}
+function fallbackCopy(text){
+  const ta = document.createElement("textarea"); ta.value = text; ta.setAttribute("aria-hidden","true");
+  ta.style.cssText = "position:fixed;left:-9999px;top:-9999px;opacity:0";
+  document.body.appendChild(ta); ta.focus(); ta.select();
+  try{ document.execCommand("copy") ? showToast("Email copi\u00e9 dans le presse-papiers") : showToast("Copie impossible"); } catch(e){ showToast("Copie impossible"); }
+  document.body.removeChild(ta);
+}
+
+function buildSimulatorCTA(){
+  const a = createEl("a","simulator-cta");
+  a.href = "https://www.louispinetavocat.fr/contenus/simulateur-valorisation-restaurant";
+  a.target = "_blank"; a.rel = "noopener";
+  const title = createEl("div","cta-title");
+  title.appendChild(document.createTextNode("\u{1F4CA} Simulateur de valorisation restaurant"));
+  const arrow = createText("span","cta-arrow","\u2192"); title.appendChild(arrow);
+  a.appendChild(title);
+  a.appendChild(createText("div","cta-desc","Estimez le vrai prix du fonds de commerce avant de vous engager. Gratuit et imm\u00e9diat."));
+  return a;
+}
+
+function createChoiceCard(label, desc, selected, onClick){
+  const ch = createEl("div", "choice-card" + (selected ? " selected" : ""));
+  ch.setAttribute("role","radio"); ch.setAttribute("aria-checked", selected ? "true" : "false"); ch.setAttribute("tabindex","0");
+  ch.appendChild(createText("div","choice-title", label));
+  if(desc) ch.appendChild(createText("div","choice-desc", desc));
+  ch.addEventListener("click", onClick);
+  ch.addEventListener("keydown", function(e){ if(e.key === "Enter" || e.key === " "){ e.preventDefault(); onClick(); } });
+  return ch;
+}
+
+function buildInfoBox(ib){
+  const box = createEl("div","info-box");
+  if(ib.title) box.appendChild(createText("span","info-title", ib.title));
+  if(ib.text) box.appendChild(createText("span","", ib.text));
+  if(ib.scale){ const ul = createEl("ul","info-scale"); ib.scale.forEach(function(s){ const li = createEl("li"); const dot = createEl("span","dot"); dot.style.background = s.color; li.appendChild(dot); li.appendChild(document.createTextNode(s.label)); ul.appendChild(li); }); box.appendChild(ul); }
+  return box;
+}
+
+function selectInGroup(group, selected){
+  group.querySelectorAll(".choice-card").forEach(function(el){ el.classList.remove("selected"); el.setAttribute("aria-checked","false"); });
+  selected.classList.add("selected"); selected.setAttribute("aria-checked","true");
+}
+
+function getActiveQuestions(){
+  const qs = [];
+  sections.forEach(function(sec){
+    if(sec.condition && !sec.condition()) return;
+    sec.questions.forEach(function(q){
+      if(!q.condition || q.condition()) qs.push({ section: sec, question: q });
+    });
+  });
+  return qs;
+}
+
+function getEmailText(pt){
+  const h = "Objet : Demande de documents pr\u00e9alable \u00e0 la visite du local\n\nMadame, Monsieur,\n\n";
+  const f = "\n\nJe vous remercie par avance pour la communication de ces \u00e9l\u00e9ments.\n\nBien cordialement,";
+  if(pt === "cession_fonds") return h + "Dans le cadre de mon projet de reprise de fonds de commerce :\n\n- Bail commercial (avec avenants)\n- R\u00e8glement de copropri\u00e9t\u00e9\n- PV d\u2019AG (3 derni\u00e8res ann\u00e9es)\n- Trois derniers bilans comptables\n- Contrats en cours\n- Autorisations administratives\n- Liste des \u00e9quipements et mat\u00e9riels\n- Engagements li\u00e9s au fonds (nantissement, cr\u00e9dits-bails)\n- Contrats de travail repris\n- Certificat RSD + carnet d\u2019entretien\n- Taxe fonci\u00e8re et charges" + f;
+  return h + "Dans le cadre de mon projet d\u2019installation :\n\n- Bail commercial existant (si cession de droit au bail)\n- R\u00e8glement de copropri\u00e9t\u00e9\n- PV d\u2019AG (3 derni\u00e8res ann\u00e9es)\n- Taxe fonci\u00e8re et charges" + f;
+}
+
+/* ─── PROFILE SUMMARY ─── */
+function getProfileSummary(){
+  const tags = [];
+  const typeLabels = { rapide:"Restauration rapide", street_food:"Street food", gastronomique:"Gastronomique", bistronomique:"Bistronomique", traditionnelle:"Traditionnelle / Classique", franchise:"Franchise" };
+  const cookLabels = { classique:"Cuisson classique", cuisson_douce:"Cuisson douce", sans_cuisson:"Sans cuisson", mixte:"Cuisson mixte" };
+  if(state.restaurationType) tags.push({ label: typeLabels[state.restaurationType] || state.restaurationType });
+  if(state.franchiseur) tags.push({ label: "Franchiseur : " + state.franchiseur });
+  if(state.cookingType) tags.push({ label: cookLabels[state.cookingType] || state.cookingType });
+  if(state.needsExtraction === "oui") tags.push({ label: "Extraction n\u00e9cessaire" });
+  if(state.needsExtraction === "non") tags.push({ label: "Pas d\u2019extraction" });
+  if(state.grandeCuisine === "oui") tags.push({ label: "Grande cuisine (> 20\u00a0kW)", cls: "warning" });
+  const legalLabels = { cession_fonds:"Cession de fonds de commerce", droit_bail:"Droit au bail / Nouveau bail" };
+  if(state.projectType) tags.push({ label: legalLabels[state.projectType] });
+  return tags;
+}
+
+function renderProfileTags(container){
+  const tags = getProfileSummary();
+  if(tags.length === 0) return;
+  const div = createEl("div","profile-summary");
+  tags.forEach(function(t){
+    const tag = createText("span","profile-tag" + (t.cls ? " " + t.cls : ""), t.label);
+    div.appendChild(tag);
+  });
+  container.appendChild(div);
+}
+
+/* ─── SCREEN MANAGEMENT ─── */
+let screens = [];
+let currentIdx = 0;
+
+function renderApp(){
+  screens = []; currentIdx = 0;
+  state.answers = {}; state.totalQuestions = 0; state.skippedSections = {};
+  state.restaurationType = null; state.franchiseur = "";
+  state.cookingType = null; state.needsExtraction = null;
+  state.grandeCuisine = null; state.projectType = null;
+  state.dateVisiteLocal = ""; state.dateRemiseCles = ""; state.dateOuverture = "";
+  state.profilRaw = null; state.nbRestosRaw = null;
+  screens.push({ type: "landing" });          // 0
+  screens.push({ type: "intro" });            // 1
+  screens.push({ type: "op_step_1" });        // 2
+  screens.push({ type: "op_step_2" });        // 3
+  screens.push({ type: "op_step_3" });        // 4
+  screens.push({ type: "op_step_4" });        // 5
+  screens.push({ type: "transition", data: { icon: "\u2696\uFE0F", badge: "\u00c9tape 2/5", title: "Passons au cadre juridique", desc: "Votre profil op\u00e9rationnel est not\u00e9. Maintenant, d\u00e9terminons le montage juridique de votre projet : cession de fonds ou droit au bail." } }); // 6
+  screens.push({ type: "legal_type" });       // 7
+  screens.push({ type: "transition", data: { icon: "\u{1F4C4}", badge: "\u00c9tape 3/5", title: "Les documents \u00e0 r\u00e9unir", desc: "Avant de visiter, il faut pr\u00e9parer le terrain. Voyons les pi\u00e8ces \u00e0 demander au c\u00e9dant ou au bailleur." } }); // 8
+  screens.push({ type: "documents" });        // 9
+  screens.push({ type: "transition", data: { icon: "\u{1F4C5}", badge: "\u00c9tape 4/5", title: "Votre calendrier", desc: "Indiquez vos dates cl\u00e9s pour obtenir un r\u00e9troplanning personnalis\u00e9 dans votre rapport d\u2019audit." } }); // 10
+  screens.push({ type: "calendar" });         // 11
+  showScreen(0);
+}
+
+var FIXED_SCREENS_COUNT = 12;
+
+function buildQuestionScreens(){
+  screens = screens.slice(0, FIXED_SCREENS_COUNT);
+  /* Transition before audit questions */
+  screens.push({ type: "transition", data: { icon: "\u{1F50D}", badge: "\u00c9tape 5/5", title: "Place \u00e0 l\u2019audit terrain", desc: "Derni\u00e8re \u00e9tape : parcourons ensemble les points cl\u00e9s du local \u2014 bail, extraction, s\u00e9curit\u00e9, chalandise, mat\u00e9riel. Vous pouvez sauter des sections si besoin." } });
+  const qs = getActiveQuestions();
+  state.totalQuestions = qs.length;
+  qs.forEach(function(item, i){ screens.push({ type: "question", data: item, index: i }); });
+  screens.push({ type: "lead_form" });
+  screens.push({ type: "result" });
+}
+
+function showScreen(idx){
+  currentIdx = idx;
+  const main = document.getElementById("appMain"); main.innerHTML = "";
+  const screen = screens[idx];
+  const div = createEl("div","screen active" + (screen.type === "result" ? " screen-result" : ""));
+  switch(screen.type){
+    case "landing": renderLanding(div); break;
+    case "intro": renderIntro(div); break;
+    case "op_step_1": renderOpStep1(div); break;
+    case "op_step_2": renderOpStep2(div); break;
+    case "op_step_3": renderOpStep3(div); break;
+    case "op_step_4": renderOpStep4(div); break;
+    case "transition": renderTransition(div, screen.data); break;
+    case "legal_type": renderLegalType(div); break;
+    case "documents": renderDocuments(div); break;
+    case "calendar": renderCalendar(div); break;
+    case "question": renderQuestion(div, screen); break;
+    case "lead_form": renderLeadForm(div); break;
+    case "result": renderResult(div); break;
+  }
+  main.appendChild(div);
+  setTimeout(function(){ div.classList.add("visible"); }, ANIM_DELAY);
+  const total = screens.length;
+  updateProgress(total > 1 ? Math.round((idx / (total - 1)) * 100) : 0);
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+/* ─── TRANSITION SCREEN ─── */
+function renderTransition(container, data){
+  var wrap = createEl("div","transition-screen");
+  wrap.appendChild(createText("span","transition-icon", data.icon));
+  wrap.appendChild(createText("div","transition-badge", data.badge));
+  wrap.appendChild(createText("div","transition-title", data.title));
+  wrap.appendChild(createText("div","transition-desc", data.desc));
+  container.appendChild(wrap);
+  var bg = createEl("div","btn-group");
+  var btn = createText("button","btn btn-primary","Continuer \u2192");
+  btn.addEventListener("click", function(){ showScreen(currentIdx + 1); });
+  bg.appendChild(btn);
+  var btnBack = createText("button","btn btn-secondary","\u2190 Retour");
+  btnBack.addEventListener("click", function(){ showScreen(currentIdx - 1); });
+  bg.appendChild(btnBack);
+  container.appendChild(bg);
+  /* Auto-advance after 3 seconds if user doesn't click */
+}
+
+/* ─── STEP INDICATOR ─── */
+function renderStepIndicator(container, activeStep){
+  const steps = ["Projet","Cadre juridique","Documents","Calendrier","Audit"];
+  const bar = createEl("div","step-indicator");
+  steps.forEach(function(s, i){
+    if(i > 0){ const line = createEl("div","step-line" + (i < activeStep ? " done" : "")); bar.appendChild(line); }
+    const dot = createText("div","step-dot" + (i < activeStep ? " done" : i === activeStep ? " active" : ""), String(i + 1));
+    dot.setAttribute("aria-label", s);
+    bar.appendChild(dot);
+  });
+  container.appendChild(bar);
+}
+
+/* ─── PAGE 0: LANDING (PAIN POINT + VALEUR) ─── */
+function renderLanding(container){
+  /* Hero */
+  const hero = createEl("div","landing-hero");
+  hero.appendChild(createText("span","landing-icon","\u{1F50D}"));
+  hero.appendChild(createText("h2","","Vous allez visiter un local pour votre restaurant ?"));
+  hero.appendChild(createText("p","landing-sub","La plupart des restaurateurs signent sans avoir v\u00e9rifi\u00e9 ce qui compte vraiment. Extraction non conforme, bail inadapt\u00e9, nantissement cach\u00e9, charges sous-estim\u00e9es\u2026 Les pi\u00e8ges sont techniques, juridiques, et souvent invisibles."));
+  container.appendChild(hero);
+
+  /* Pain points */
+  const pains = [
+    { title: "Un oubli co\u00fbte cher", desc: "Un d\u00e9tail ignor\u00e9 \u00e0 la visite, c\u2019est une mauvaise surprise \u00e0 50\u202f000\u00a0\u20ac six mois plus tard." },
+    { title: "Trop d\u2019angles morts", desc: "ERP, accessibilit\u00e9 PMR, destination du bail, cr\u00e9dit-bail sur le mat\u00e9riel\u2026 Impossible de tout v\u00e9rifier de t\u00eate." },
+    { title: "La pression du temps", desc: "Le vendeur pousse \u00e0 signer vite. Sans m\u00e9thode, on passe \u00e0 c\u00f4t\u00e9 de l\u2019essentiel." }
+  ];
+  pains.forEach(function(p){
+    const c = createEl("div","pain-card");
+    c.appendChild(createText("div","pain-title", p.title));
+    c.appendChild(createText("div","pain-desc", p.desc));
+    container.appendChild(c);
+  });
+
+  /* Transition */
+  const transCard = createEl("div","card");
+  transCard.style.textAlign = "center";
+  transCard.appendChild(createText("h3","","DiagLocal transforme votre visite en audit structur\u00e9"));
+  const transP = createText("p","","En 5 minutes, identifiez les points de vigilance de votre local, obtenez un r\u00e9troplanning personnalis\u00e9 et sachez exactement quoi v\u00e9rifier avant de vous engager.");
+  transP.style.cssText = "font-size:0.86rem;line-height:1.7"; transCard.appendChild(transP);
+  container.appendChild(transCard);
+
+  /* Value props */
+  var vals = [
+    { icon: "\u2705", title: "Points de vigilance identifi\u00e9s", desc: "Chaque section met en lumi\u00e8re ce qu\u2019il faut v\u00e9rifier : bail, extraction, ERP, chalandise, mat\u00e9riel." },
+    { icon: "\u{1F4C5}", title: "R\u00e9troplanning sur-mesure", desc: "Les \u00e9tapes cl\u00e9s de votre projet, dans le bon ordre, avec les d\u00e9lais r\u00e9alistes." },
+    { icon: "\u{1F6E1}\uFE0F", title: "Des alertes concr\u00e8tes", desc: "Les risques sont signal\u00e9s clairement pour que rien ne vous \u00e9chappe." }
+  ];
+  vals.forEach(function(v){
+    var vc = createEl("div","value-card");
+    vc.appendChild(createText("div","value-title", v.icon + "  " + v.title));
+    vc.appendChild(createText("div","value-desc", v.desc));
+    container.appendChild(vc);
+  });
+
+  /* CTA */
+  var bg = createEl("div","btn-group"); bg.style.marginTop = "20px";
+  var btn = createText("button","btn btn-primary","D\u00e9marrer mon DiagLocal \u2192");
+  btn.addEventListener("click", function(){ showScreen(1); }); bg.appendChild(btn);
+  container.appendChild(bg);
+}
+
+/* ─── PAGE 1: INTRO (Comment ça marche) ─── */
+function renderIntro(container){
+  const howCard = createEl("div","card");
+  howCard.appendChild(createText("h2","","Comment \u00e7a marche ?"));
+  const howP = createText("p","","Le DiagLocal vous guide en 5 \u00e9tapes. Chaque question est adapt\u00e9e \u00e0 votre projet : type de restauration, cession de fonds ou droit au bail, franchise ou ind\u00e9pendant.");
+  howP.style.cssText = "font-size:0.86rem;line-height:1.7;margin-bottom:16px"; howCard.appendChild(howP);
+
+  var steps = [
+    { num: "1", title: "Votre projet", desc: "Type de restauration, cuisson, extraction, grande cuisine." },
+    { num: "2", title: "Cadre juridique", desc: "Cession de fonds ou droit au bail : le contexte l\u00e9gal de l\u2019op\u00e9ration." },
+    { num: "3", title: "Documents \u00e0 r\u00e9unir", desc: "La check-list des pi\u00e8ces \u00e0 demander au c\u00e9dant ou au bailleur." },
+    { num: "4", title: "Calendrier", desc: "Vos dates cl\u00e9s pour g\u00e9n\u00e9rer un r\u00e9troplanning sur-mesure." },
+    { num: "5", title: "Audit terrain", desc: "Les questions section par section : bail, extraction, ERP, chalandise, mat\u00e9riel\u2026" }
+  ];
+  steps.forEach(function(s){
+    var row = createEl("div"); row.style.cssText = "display:flex;align-items:flex-start;gap:12px;margin-bottom:14px";
+    var badge = createText("div","", s.num);
+    badge.style.cssText = "min-width:28px;height:28px;border-radius:50%;background:var(--jaune);color:var(--noir);font-weight:700;font-size:0.82rem;display:flex;align-items:center;justify-content:center"; row.appendChild(badge);
+    var txt = createEl("div");
+    txt.appendChild(createText("div","", s.title)); txt.firstChild.style.cssText = "font-weight:600;font-size:0.88rem;margin-bottom:2px";
+    var d = createText("div","", s.desc); d.style.cssText = "font-size:0.82rem;color:var(--gris-texte);line-height:1.5"; txt.appendChild(d);
+    row.appendChild(txt); howCard.appendChild(row);
+  });
+
+  var timeNote = createText("p","","\u23F1 Dur\u00e9e estim\u00e9e : 5 \u00e0 8 minutes. Vous pouvez sauter des sections si n\u00e9cessaire.");
+  timeNote.style.cssText = "font-size:0.8rem;color:var(--gris-texte);text-align:center;margin-top:8px;font-style:italic"; howCard.appendChild(timeNote);
+  container.appendChild(howCard);
+
+  /* Social proof compact */
+  const proofCard = createEl("div","card");
+  proofCard.style.cssText = "background:var(--noir);color:var(--blanc);text-align:center;padding:24px";
+  const proofTitle = createText("p","","Con\u00e7u par Ma\u00eetre Louis Pinet");
+  proofTitle.style.cssText = "font-weight:700;font-size:0.95rem;margin-bottom:4px;color:var(--jaune)"; proofCard.appendChild(proofTitle);
+  const proofSub = createText("p","","Avocat d\u00e9di\u00e9 aux restaurateurs");
+  proofSub.style.cssText = "font-size:0.82rem;color:rgba(255,255,255,0.75);margin-bottom:16px;line-height:1.6"; proofCard.appendChild(proofSub);
+  const stats = createEl("div"); stats.style.cssText = "display:flex;justify-content:center;gap:28px";
+  [["Bail","N\u00e9gociation"],["Fonds de commerce","Cession"],["Extraction","Diagnostic"]].forEach(function(s){
+    const st = createEl("div"); st.style.cssText = "text-align:center";
+    const n = createText("div","",s[0]); n.style.cssText = "font-size:0.95rem;font-weight:700;color:var(--jaune)"; st.appendChild(n);
+    const l = createText("div","",s[1]); l.style.cssText = "font-size:0.7rem;color:rgba(255,255,255,0.6);margin-top:2px"; st.appendChild(l);
+    stats.appendChild(st);
+  });
+  proofCard.appendChild(stats);
+  container.appendChild(proofCard);
+
+  const bg = createEl("div","btn-group");
+  const btn = createText("button","btn btn-primary","C\u2019est parti \u2192");
+  btn.addEventListener("click", function(){ showScreen(currentIdx + 1); }); bg.appendChild(btn);
+  const btnBack = createText("button","btn btn-secondary","\u2190 Retour");
+  btnBack.addEventListener("click", function(){ showScreen(currentIdx - 1); }); bg.appendChild(btnBack);
+  container.appendChild(bg);
+}
+
+/* ─── STEP 1a: RESTAURANT TYPE ─── */
+function renderOpStep1(container){
+  renderStepIndicator(container, 0);
+  const card = createEl("div","card");
+  card.appendChild(createText("div","question-label","\u00c9tape 1 \u2014 Votre projet op\u00e9rationnel"));
+  card.appendChild(createText("div","question-text","Quel type de restauration envisagez-vous ?"));
+
+  const group = createEl("div"); group.setAttribute("role","radiogroup"); group.setAttribute("aria-label","Type de restauration");
+  const types = [
+    { value: "traditionnelle", title: "Restauration traditionnelle / Classique", desc: "Cuisine faite maison, brasserie, caf\u00e9-restaurant, service \u00e0 table, carte vari\u00e9e." },
+    { value: "bistronomique", title: "Bistronomique", desc: "Cuisine gastronomique dans un cadre d\u00e9contract\u00e9, produits de qualit\u00e9." },
+    { value: "gastronomique", title: "Gastronomique", desc: "Haute cuisine, service haut de gamme, produits d\u2019exception." },
+    { value: "rapide", title: "Restauration rapide", desc: "Service au comptoir, consommation sur place ou \u00e0 emporter." },
+    { value: "street_food", title: "Street food / Snacking", desc: "Offre nomade, sandwicherie, saladerie, poke, bagels\u2026" },
+    { value: "franchise", title: "Franchise / R\u00e9seau", desc: "Ouverture sous enseigne d\u2019un r\u00e9seau de franchise." }
+  ];
+  types.forEach(function(t){
+    const ch = createChoiceCard(t.title, t.desc, state.restaurationType === t.value, function(){
+      state.restaurationType = t.value;
+      selectInGroup(group, ch);
+      var ff = document.getElementById("franchiseField");
+      if(ff) ff.style.display = t.value === "franchise" ? "block" : "none";
+    });
+    group.appendChild(ch);
+  });
+  card.appendChild(group);
+
+  var franchiseField = createEl("div"); franchiseField.id = "franchiseField";
+  franchiseField.style.display = state.restaurationType === "franchise" ? "block" : "none";
+  franchiseField.style.marginTop = "12px";
+  franchiseField.appendChild(createText("div","question-hint","Indiquez le nom du franchiseur :"));
+  var input = createEl("input","text-input"); input.type = "text"; input.placeholder = "Ex. : McDonald\u2019s, Burger King, Pokawa\u2026";
+  input.value = state.franchiseur;
+  input.addEventListener("input", function(){ state.franchiseur = input.value; });
+  franchiseField.appendChild(input);
+  card.appendChild(franchiseField);
+  container.appendChild(card);
+
+  var bg = createEl("div","btn-group");
+  var btnNext = createText("button","btn btn-primary","Continuer \u2192");
+  btnNext.addEventListener("click", function(){
+    if(!state.restaurationType){ showToast("Choisissez votre type de restauration"); return; }
+    showScreen(currentIdx + 1);
+  });
+  bg.appendChild(btnNext);
+  var btnBack = createText("button","btn btn-secondary","\u2190 Retour");
+  btnBack.addEventListener("click", function(){ showScreen(currentIdx - 1); }); bg.appendChild(btnBack);
+  container.appendChild(bg);
+}
+
+/* ─── STEP 1b: COOKING TYPE ─── */
+function renderOpStep2(container){
+  renderStepIndicator(container, 0);
+  const card = createEl("div","card");
+  card.appendChild(createText("div","question-label","\u00c9tape 1 \u2014 Votre projet op\u00e9rationnel"));
+  card.appendChild(createText("div","question-text","Quel type de cuisson allez-vous pratiquer ?"));
+  card.appendChild(createText("div","question-hint","Cela d\u00e9termine les besoins en extraction et les obligations de s\u00e9curit\u00e9."));
+
+  const group = createEl("div"); group.setAttribute("role","radiogroup"); group.setAttribute("aria-label","Type de cuisson");
+  [
+    { value: "classique", title: "Cuisson classique", desc: "Four, plaques, friteuse, grill\u2026 Production de fum\u00e9es et graisses." },
+    { value: "cuisson_douce", title: "Cuisson douce / basse temp\u00e9rature", desc: "Sous-vide, vapeur, bain-marie. Peu de production de fum\u00e9es." },
+    { value: "mixte", title: "Cuisson mixte", desc: "Combinaison de cuisson classique et douce selon les plats." },
+    { value: "sans_cuisson", title: "Sans cuisson / assemblage", desc: "Saladerie, poke bowls, sandwicherie froide. Pas de cuisson sur place." }
+  ].forEach(function(t){
+    const ch = createChoiceCard(t.title, t.desc, state.cookingType === t.value, function(){
+      state.cookingType = t.value; selectInGroup(group, ch);
+    });
+    group.appendChild(ch);
+  });
+  card.appendChild(group);
+  container.appendChild(card);
+
+  var bg = createEl("div","btn-group");
+  var btnNext = createText("button","btn btn-primary","Continuer \u2192");
+  btnNext.addEventListener("click", function(){
+    if(!state.cookingType){ showToast("Choisissez votre type de cuisson"); return; }
+    showScreen(currentIdx + 1);
+  });
+  bg.appendChild(btnNext);
+  var btnBack = createText("button","btn btn-secondary","\u2190 Retour");
+  btnBack.addEventListener("click", function(){ showScreen(currentIdx - 1); }); bg.appendChild(btnBack);
+  container.appendChild(bg);
+}
+
+/* ─── STEP 1c: EXTRACTION ─── */
+function renderOpStep3(container){
+  renderStepIndicator(container, 0);
+  const card = createEl("div","card");
+  card.appendChild(createText("div","question-label","\u00c9tape 1 \u2014 Votre projet op\u00e9rationnel"));
+  card.appendChild(createText("div","question-text","Votre activit\u00e9 n\u00e9cessite-t-elle une extraction ?"));
+  card.appendChild(buildInfoBox({ title: "Quand a-t-on besoin d\u2019extraction ?", text: "Toute activit\u00e9 de cuisson g\u00e9n\u00e9rant des fum\u00e9es, vapeurs ou graisses n\u00e9cessite un syst\u00e8me d\u2019extraction conforme au RSD. Une saladerie ou sandwicherie froide peut parfois s\u2019en passer, mais une simple ventilation ne suffit g\u00e9n\u00e9ralement pas d\u00e8s qu\u2019il y a cuisson." }));
+
+  const group = createEl("div"); group.setAttribute("role","radiogroup"); group.setAttribute("aria-label","Extraction n\u00e9cessaire");
+  [{ value: "oui", title: "Oui, extraction n\u00e9cessaire", desc: "Cuisson sur place avec production de fum\u00e9es/graisses." },
+   { value: "non", title: "Non, pas d\u2019extraction", desc: "Assemblage froid uniquement, pas de cuisson." },
+   { value: "ne_sais_pas", title: "Je ne sais pas encore", desc: "Un diagnostic sera n\u00e9cessaire." }
+  ].forEach(function(t){
+    const ch = createChoiceCard(t.title, t.desc, state.needsExtraction === t.value, function(){
+      state.needsExtraction = t.value; selectInGroup(group, ch);
+    });
+    group.appendChild(ch);
+  });
+  card.appendChild(group);
+  container.appendChild(card);
+
+  var bg = createEl("div","btn-group");
+  var btnNext = createText("button","btn btn-primary","Continuer \u2192");
+  btnNext.addEventListener("click", function(){
+    if(!state.needsExtraction){ showToast("Indiquez si vous avez besoin d\u2019extraction"); return; }
+    showScreen(currentIdx + 1);
+  });
+  bg.appendChild(btnNext);
+  var btnBack = createText("button","btn btn-secondary","\u2190 Retour");
+  btnBack.addEventListener("click", function(){ showScreen(currentIdx - 1); }); bg.appendChild(btnBack);
+  container.appendChild(bg);
+}
+
+/* ─── STEP 1d: GRANDE CUISINE ─── */
+function renderOpStep4(container){
+  renderStepIndicator(container, 0);
+  const card = createEl("div","card");
+  card.appendChild(createText("div","question-label","\u00c9tape 1 \u2014 Votre projet op\u00e9rationnel"));
+  card.appendChild(createText("div","question-text","Allez-vous d\u00e9passer 20\u00a0kW de puissance totale d\u2019appareils de cuisson ?"));
+  card.appendChild(buildInfoBox({ title: "Seuil \u00abgrande cuisine\u00bb", text: "Au-del\u00e0 de 20\u00a0kW, le local est class\u00e9 \u00abgrande cuisine\u00bb avec des obligations suppl\u00e9mentaires : extinction automatique, arr\u00eat d\u2019urgence, ventilation renforc\u00e9e (arr\u00eat\u00e9 du 25 juin 1980).",
+    scale: [
+      { label: "\u2264 20\u00a0kW \u2014 R\u00e9glementation ERP standard", color: "var(--vert-ok)" },
+      { label: "> 20\u00a0kW \u2014 Obligations \u00abgrande cuisine\u00bb suppl\u00e9mentaires", color: "var(--rouge-risque)" }
+    ] }));
+
+  const group = createEl("div"); group.setAttribute("role","radiogroup"); group.setAttribute("aria-label","Grande cuisine");
+  [{ value: "oui", title: "Oui, puissance > 20\u00a0kW", desc: "Cuisine intensive avec \u00e9quipements lourds (piano, friteuses, four)." },
+   { value: "non", title: "Non, puissance \u2264 20\u00a0kW", desc: "Cuisine l\u00e9g\u00e8re ou mod\u00e9r\u00e9e." },
+   { value: "ne_sais_pas", title: "Je ne sais pas encore", desc: "Il faudra faire le calcul avec votre liste d\u2019\u00e9quipements." }
+  ].forEach(function(t){
+    const ch = createChoiceCard(t.title, t.desc, state.grandeCuisine === t.value, function(){
+      state.grandeCuisine = t.value; selectInGroup(group, ch);
+    });
+    group.appendChild(ch);
+  });
+  card.appendChild(group);
+  container.appendChild(card);
+
+  var bg = createEl("div","btn-group");
+  var btnNext = createText("button","btn btn-primary","Continuer \u2192");
+  btnNext.addEventListener("click", function(){
+    if(!state.grandeCuisine){ showToast("Indiquez si vous d\u00e9passerez 20\u00a0kW"); return; }
+    showScreen(currentIdx + 1);
+  });
+  bg.appendChild(btnNext);
+  var btnBack = createText("button","btn btn-secondary","\u2190 Retour");
+  btnBack.addEventListener("click", function(){ showScreen(currentIdx - 1); }); bg.appendChild(btnBack);
+  container.appendChild(bg);
+}
+
+/* ─── STEP 2: LEGAL FRAMEWORK ─── */
+function renderLegalType(container){
+  renderStepIndicator(container, 1);
+  renderProfileTags(container);
+
+  const card = createEl("div","card");
+  card.appendChild(createText("div","question-label","\u00c9tape 2 \u2014 Cadre juridique"));
+  card.appendChild(createText("div","question-text","Quel est le montage juridique de votre projet ?"));
+
+  const group = createEl("div"); group.setAttribute("role","radiogroup"); group.setAttribute("aria-label","Type de projet");
+  const choices = [
+    { value: "cession_fonds", title: "Cession de fonds de commerce", desc: "Rachat de l\u2019actif : client\u00e8le, bail, mat\u00e9riel, enseigne, licence, salari\u00e9s\u2026" },
+    { value: "droit_bail", title: "Droit au bail ou local nu (nouveau bail)", desc: "Reprise du bail existant (cession de droit au bail) ou signature d\u2019un bail neuf sur un local vacant. Pas de reprise d\u2019activit\u00e9 existante." }
+  ];
+  choices.forEach(function(c){
+    const ch = createChoiceCard(c.title, c.desc, state.projectType === c.value, function(){
+      state.projectType = c.value; selectInGroup(group, ch);
+    });
+    group.appendChild(ch);
+  });
+  card.appendChild(group); container.appendChild(card);
+
+  const disc = createEl("div","disclaimer");
+  disc.appendChild(createText("strong","","Quelle diff\u00e9rence ? "));
+  disc.appendChild(document.createTextNode("En cession de fonds de commerce, vous rachetez un actif comprenant la client\u00e8le, le droit au bail, le mat\u00e9riel, l\u2019enseigne, la licence et les contrats de travail (art. L.1224-1 C. trav.). En droit au bail, vous reprenez uniquement le bail commercial d\u2019un locataire sortant. En local nu, vous signez un bail directement avec le bailleur. Dans ces deux derniers cas, il n\u2019y a pas de reprise d\u2019activit\u00e9 existante."));
+  container.appendChild(disc);
+
+  /* Simulator CTA — financial info box */
+  const finBox = createEl("div","info-box"); finBox.style.marginTop = "8px";
+  finBox.appendChild(createText("span","info-title","\u{1F4B0} Prix et \u00e9l\u00e9ments financiers"));
+  finBox.appendChild(createText("span","","Cet outil audite le local, pas les finances. Pour estimer si le prix demand\u00e9 par le c\u00e9dant est coh\u00e9rent, utilisez notre simulateur de valorisation :"));
+  container.appendChild(finBox);
+  container.appendChild(buildSimulatorCTA());
+
+  const bg = createEl("div","btn-group");
+  const btnNext = createText("button","btn btn-primary","Continuer \u2192");
+  btnNext.addEventListener("click", function(){
+    if(!state.projectType){ showToast("Choisissez le cadre juridique"); return; }
+    showScreen(currentIdx + 1);
+  });
+  bg.appendChild(btnNext);
+  const btnBack = createText("button","btn btn-secondary","\u2190 Retour");
+  btnBack.addEventListener("click", function(){ showScreen(currentIdx - 1); }); bg.appendChild(btnBack);
+  container.appendChild(bg);
+}
+
+/* ─── DOCUMENTS ─── */
+function renderDocuments(container){
+  renderStepIndicator(container, 2);
+  renderProfileTags(container);
+
+  const docCard = createEl("div","card");
+  let h3Text, pText, docs;
+  if(isCession()){
+    h3Text = "Documents \u00e0 demander au c\u00e9dant"; pText = "Avant toute visite, demandez les documents suivants :";
+    docs = ["Bail commercial (avec avenants)","R\u00e8glement de copropri\u00e9t\u00e9","PV d\u2019AG (3 derni\u00e8res ann\u00e9es)","Trois derniers bilans comptables","Contrats en cours","Autorisations administratives","Liste des \u00e9quipements et mat\u00e9riels","Engagements (nantissement, cr\u00e9dits-bails)","Contrats de travail repris","Certificat RSD + carnet d\u2019entretien","Taxe fonci\u00e8re et charges"];
+    if(isFranchise()) docs.push("Contrat de franchise et DIP","Cahier des charges d\u2019am\u00e9nagement du franchiseur");
+  } else {
+    h3Text = "Documents \u00e0 demander"; pText = "Avant toute visite :";
+    docs = ["Bail commercial existant (si cession de droit au bail)","R\u00e8glement de copropri\u00e9t\u00e9","PV d\u2019AG (3 derni\u00e8res ann\u00e9es)","Taxe fonci\u00e8re et charges"];
+  }
+  docCard.appendChild(createText("h3","",h3Text));
+  docCard.appendChild(createText("p","",pText));
+  const ul = createEl("ul","doc-list");
+  docs.forEach(function(d){ ul.appendChild(createText("li","",d)); });
+  docCard.appendChild(ul); container.appendChild(docCard);
+
+  if(isCession()) container.appendChild(buildSimulatorCTA());
+
+  const bg = createEl("div","btn-group");
+  const btnCopy = createText("button","btn btn-secondary","Copier l\u2019email de demande de documents");
+  btnCopy.addEventListener("click", function(){ copyText(getEmailText(state.projectType)); }); bg.appendChild(btnCopy);
+  const btnNext = createText("button","btn btn-primary","Continuer \u2192");
+  btnNext.addEventListener("click", function(){ showScreen(currentIdx + 1); }); bg.appendChild(btnNext);
+  const btnBack = createText("button","btn btn-secondary","\u2190 Retour");
+  btnBack.addEventListener("click", function(){ showScreen(currentIdx - 1); }); bg.appendChild(btnBack);
+  container.appendChild(bg);
+}
+
+/* ─── CALENDAR / R\u00c9TROPLANNING ─── */
+function renderCalendar(container){
+  renderStepIndicator(container, 3);
+  renderProfileTags(container);
+
+  const card = createEl("div","card");
+  card.appendChild(createText("div","question-label","\u00c9tape 4 \u2014 Votre calendrier pr\u00e9visionnel"));
+  card.appendChild(createText("div","question-text","Quelles sont vos dates cl\u00e9s ?"));
+  card.appendChild(createText("p","","Ces informations permettront de g\u00e9n\u00e9rer un r\u00e9troplanning personnalis\u00e9 dans votre rapport d\u2019audit."));
+
+  const infoRp = buildInfoBox({ title: "\u{1F4C5} Pourquoi un r\u00e9troplanning ?",
+    text: "La r\u00e9ussite d\u2019un projet de restauration d\u00e9pend du respect d\u2019un calendrier pr\u00e9cis : promesse, financement, acte de cession, travaux, formation, ouverture. Indiquez vos dates id\u00e9ales et nous calculerons les d\u00e9lais habituels pour chaque \u00e9tape." });
+  card.appendChild(infoRp);
+
+  const grid = createEl("div","form-grid");
+
+  /* Date de visite */
+  const g1 = createEl("div","form-group");
+  const lb1 = createEl("label","form-label"); lb1.setAttribute("for","cal_visite"); lb1.textContent = "Date de visite du local";
+  g1.appendChild(lb1);
+  const inp1 = createEl("input","form-input"); inp1.type = "date"; inp1.id = "cal_visite";
+  inp1.value = state.dateVisiteLocal;
+  g1.appendChild(inp1);
+  grid.appendChild(g1);
+
+  /* Date souhait\u00e9e de remise des cl\u00e9s */
+  const g2 = createEl("div","form-group");
+  const lb2 = createEl("label","form-label"); lb2.setAttribute("for","cal_cles"); lb2.textContent = "Date souhait\u00e9e de remise des cl\u00e9s";
+  g2.appendChild(lb2);
+  const inp2 = createEl("input","form-input"); inp2.type = "date"; inp2.id = "cal_cles";
+  inp2.value = state.dateRemiseCles;
+  g2.appendChild(inp2);
+  grid.appendChild(g2);
+
+  /* Date souhait\u00e9e d'ouverture */
+  const g3 = createEl("div","form-group full-width");
+  const lb3 = createEl("label","form-label"); lb3.setAttribute("for","cal_ouverture"); lb3.textContent = "Date souhait\u00e9e d\u2019ouverture (accueil des premiers clients)";
+  g3.appendChild(lb3);
+  const inp3 = createEl("input","form-input"); inp3.type = "date"; inp3.id = "cal_ouverture";
+  inp3.value = state.dateOuverture;
+  g3.appendChild(inp3);
+  grid.appendChild(g3);
+
+  card.appendChild(grid);
+
+  /* Zone d'alertes dynamiques */
+  var calAlerts = createEl("div"); calAlerts.id = "calAlerts"; card.appendChild(calAlerts);
+
+  function validateCalendar(){
+    var al = document.getElementById("calAlerts"); if(!al) return;
+    al.innerHTML = "";
+    var v = state.dateVisiteLocal, c = state.dateRemiseCles, o = state.dateOuverture;
+    var warnings = [];
+    var today = new Date().toISOString().split("T")[0];
+
+    /* Ordre chronologique */
+    if(v && c && c <= v) warnings.push({ level: "red", msg: "La date de remise des cl\u00e9s est ant\u00e9rieure ou \u00e9gale \u00e0 la date de visite. V\u00e9rifiez vos dates." });
+    if(v && o && o <= v) warnings.push({ level: "red", msg: "La date d\u2019ouverture est ant\u00e9rieure ou \u00e9gale \u00e0 la date de visite. V\u00e9rifiez vos dates." });
+    if(c && o && o <= c) warnings.push({ level: "red", msg: "La date d\u2019ouverture est ant\u00e9rieure ou \u00e9gale \u00e0 la remise des cl\u00e9s. Il faut pr\u00e9voir un d\u00e9lai pour les travaux et l\u2019am\u00e9nagement." });
+
+    /* D\u00e9lais trop serr\u00e9s */
+    if(v && c){
+      var diffVC = Math.round((new Date(c+"T00:00:00") - new Date(v+"T00:00:00")) / 86400000);
+      if(diffVC > 0 && diffVC < 60){
+        if(isCession()) warnings.push({ level: "orange", msg: "Seulement " + diffVC + " jours entre la visite et la remise des cl\u00e9s. En cession de fonds, pr\u00e9voyez au minimum 3 \u00e0 4 mois (promesse, financement, acte). Calendrier tr\u00e8s tendu." });
+        else warnings.push({ level: "orange", msg: "Seulement " + diffVC + " jours entre la visite et la remise des cl\u00e9s. Pr\u00e9voyez le temps de n\u00e9gociation et de signature du bail." });
+      }
+    }
+    if(c && o){
+      var diffCO = Math.round((new Date(o+"T00:00:00") - new Date(c+"T00:00:00")) / 86400000);
+      if(diffCO > 0 && diffCO < 30) warnings.push({ level: "orange", msg: "Seulement " + diffCO + " jours entre la remise des cl\u00e9s et l\u2019ouverture. Pr\u00e9voyez au minimum 1 \u00e0 2 mois pour les travaux, l\u2019am\u00e9nagement et les autorisations." });
+    }
+
+    /* Dates dans le pass\u00e9 (sauf visite) */
+    if(c && c < today) warnings.push({ level: "orange", msg: "La date de remise des cl\u00e9s est dans le pass\u00e9. Si la remise a d\u00e9j\u00e0 eu lieu, c\u2019est normal. Sinon, v\u00e9rifiez." });
+    if(o && o < today) warnings.push({ level: "orange", msg: "La date d\u2019ouverture est dans le pass\u00e9. V\u00e9rifiez cette date." });
+
+    if(warnings.length > 0){
+      warnings.forEach(function(w){
+        var d = createEl("div","info-box");
+        d.style.borderLeftColor = w.level === "red" ? "var(--rouge-risque)" : "var(--orange-warning)";
+        d.style.background = w.level === "red" ? "rgba(214,69,69,0.06)" : "rgba(244,164,53,0.06)";
+        d.innerHTML = "<strong>" + (w.level === "red" ? "\u26D4 Incoh\u00e9rence" : "\u26A0\uFE0F Attention") + "</strong> " + w.msg;
+        al.appendChild(d);
+      });
+    }
+  }
+
+  /* Brancher la validation sur chaque changement de date */
+  inp1.addEventListener("change", function(){ state.dateVisiteLocal = inp1.value; validateCalendar(); });
+  inp2.addEventListener("change", function(){ state.dateRemiseCles = inp2.value; validateCalendar(); });
+  inp3.addEventListener("change", function(){ state.dateOuverture = inp3.value; validateCalendar(); });
+
+  const note = createEl("div","disclaimer");
+  note.appendChild(createText("strong","","Information : "));
+  note.appendChild(document.createTextNode("Ces dates sont indicatives. Elles servent \u00e0 g\u00e9n\u00e9rer un r\u00e9troplanning estim\u00e9 dans votre rapport. Les d\u00e9lais r\u00e9els d\u00e9pendent de nombreux facteurs (financement, travaux, autorisations). Si vous n\u2019avez pas encore de dates, vous pouvez passer cette \u00e9tape."));
+  card.appendChild(note);
+
+  container.appendChild(card);
+
+  /* Valider \u00e0 l'affichage si des dates sont d\u00e9j\u00e0 renseign\u00e9es */
+  validateCalendar();
+
+  const bg = createEl("div","btn-group");
+  const btnStart = createText("button","btn btn-primary","Commencer l\u2019audit \u2192");
+  btnStart.addEventListener("click", function(){ buildQuestionScreens(); showScreen(currentIdx + 1); }); bg.appendChild(btnStart);
+  const btnBack = createText("button","btn btn-secondary","\u2190 Retour");
+  btnBack.addEventListener("click", function(){ showScreen(currentIdx - 1); }); bg.appendChild(btnBack);
+  container.appendChild(bg);
+}
+
+/* ─── SECTION NAVIGATION HELPERS ─── */
+function getActiveSections(){
+  var active = [];
+  sections.forEach(function(sec){
+    if(sec.condition && !sec.condition()) return;
+    var hasQ = false;
+    sec.questions.forEach(function(q){ if(!q.condition || q.condition()) hasQ = true; });
+    if(hasQ) active.push(sec);
+  });
+  return active;
+}
+
+function getSectionStatus(secId, currentSecId){
+  if(state.skippedSections[secId]) return "skipped";
+  /* Check if all questions in this section have been answered */
+  var sec = sections.filter(function(s){ return s.id === secId; })[0];
+  if(!sec) return "future";
+  var allAnswered = true, anyAnswered = false;
+  sec.questions.forEach(function(q){
+    if(q.condition && !q.condition()) return;
+    if(state.answers[q.id]) anyAnswered = true; else allAnswered = false;
+  });
+  if(secId === currentSecId) return "current";
+  if(allAnswered && anyAnswered) return "done";
+  if(anyAnswered) return "current";
+  return "future";
+}
+
+function findScreenIndexForSection(targetSecId){
+  for(var i = 0; i < screens.length; i++){
+    if(screens[i].type === "question" && screens[i].data.section.id === targetSecId) return i;
+  }
+  return -1;
+}
+
+function findNextSectionStart(currentSecId){
+  var activeSecs = getActiveSections();
+  var found = false;
+  for(var i = 0; i < activeSecs.length; i++){
+    if(found){
+      var idx = findScreenIndexForSection(activeSecs[i].id);
+      if(idx !== -1) return idx;
+    }
+    if(activeSecs[i].id === currentSecId) found = true;
+  }
+  /* No next section — go to lead_form */
+  for(var j = 0; j < screens.length; j++){
+    if(screens[j].type === "lead_form") return j;
+  }
+  return screens.length - 2;
+}
+
+function skipSection(secId){
+  state.skippedSections[secId] = true;
+  var nextIdx = findNextSectionStart(secId);
+  showScreen(nextIdx);
+}
+
+function jumpToSection(secId){
+  var idx = findScreenIndexForSection(secId);
+  if(idx !== -1){
+    /* Un-skip if jumping back to a skipped section */
+    delete state.skippedSections[secId];
+    showScreen(idx);
+  }
+}
+
+/* ─── QUESTIONS ─── */
+function renderQuestion(container, screen){
+  const sec = screen.data.section, q = screen.data.question;
+  const qIdx = screen.index, total = state.totalQuestions;
+
+  renderStepIndicator(container, 4);
+
+  /* Section navigation bar */
+  const activeSecs = getActiveSections();
+  const secNav = createEl("div","section-nav");
+  activeSecs.forEach(function(s){
+    var status = getSectionStatus(s.id, sec.id);
+    var pill = createText("button","section-pill " + status, s.icon + " " + s.name);
+    pill.addEventListener("click", function(){ jumpToSection(s.id); });
+    secNav.appendChild(pill);
+  });
+  container.appendChild(secNav);
+
+  const card = createEl("div","card");
+  const hdr = createEl("div","section-header");
+  hdr.appendChild(createText("span","section-badge", sec.icon + " " + sec.name)); card.appendChild(hdr);
+  card.appendChild(createText("div","question-label","Question " + (qIdx + 1) + " sur " + total));
+  card.appendChild(createText("div","question-text", q.text));
+  if(q.hint) card.appendChild(createText("div","question-hint", q.hint));
+  if(q.infoBox) card.appendChild(buildInfoBox(q.infoBox));
+
+  const selectedValue = state.answers[q.id] ? state.answers[q.id].value : null;
+  const group = createEl("div"); group.setAttribute("role","radiogroup"); group.setAttribute("aria-label", q.text);
+  q.options.forEach(function(opt){
+    const ch = createChoiceCard(opt.label, null, selectedValue === opt.value, function(){
+      state.answers[q.id] = { value: opt.value, score: opt.score, maxScore: MAX_SCORE, sectionId: sec.id };
+      selectInGroup(group, ch);
+      setTimeout(function(){ if(currentIdx < screens.length - 1) showScreen(currentIdx + 1); }, TRANSITION_DELAY);
+    });
+    group.appendChild(ch);
+  });
+  card.appendChild(group); container.appendChild(card);
+
+  const nav = createEl("div","nav-row");
+  const btnBack = createText("button","btn btn-secondary","\u2190");
+  btnBack.style.flex = "0 0 60px"; btnBack.setAttribute("aria-label","Question pr\u00e9c\u00e9dente");
+  btnBack.addEventListener("click", function(){ showScreen(currentIdx - 1); }); nav.appendChild(btnBack);
+  if(currentIdx < screens.length - 1){
+    const btnSkip = createText("button","btn btn-secondary","Passer cette question");
+    btnSkip.addEventListener("click", function(){ showScreen(currentIdx + 1); }); nav.appendChild(btnSkip);
+  }
+  /* Skip entire section button */
+  var isLastSection = activeSecs[activeSecs.length - 1].id === sec.id;
+  var btnSkipSec = createText("button","btn-skip-section", isLastSection ? "Terminer l\u2019audit \u2192" : "Passer la section \u00ab\u00a0" + sec.name + "\u00a0\u00bb \u2192");
+  btnSkipSec.addEventListener("click", function(){
+    skipSection(sec.id);
+  });
+  nav.appendChild(btnSkipSec);
+  container.appendChild(nav);
+  container.appendChild(createText("div","skip-section-note","Les sections non compl\u00e9t\u00e9es ne seront pas comptabilis\u00e9es dans votre score."));
+}
+
+/* ─── EMAILJS CONFIG ─── */
+const EMAILJS_SERVICE_ID = "service_p4n5irf";
+const EMAILJS_TEMPLATE_ID = "template_9oonb5i";
+const EMAILJS_PUBLIC_KEY = "3MND6tW8YvzuBeowW";
+let emailjsReady = false;
+
+function initEmailJS(){
+  if(emailjsReady || typeof emailjs === "undefined") return;
+  emailjs.init(EMAILJS_PUBLIC_KEY);
+  emailjsReady = true;
+}
+
+function buildAuditSummaryForEmail(){
+  const lines = [];
+  const tags = getProfileSummary();
+  lines.push("PROFIL : " + tags.map(function(t){ return t.label; }).join(" | "));
+  lines.push("");
+  const activeQs = getActiveQuestions();
+  let totalScore = 0, totalMax = 0;
+  const sectionData = {};
+  activeQs.forEach(function(item){
+    const q = item.question, sec = item.section, a = state.answers[q.id];
+    if(!sectionData[sec.id]) sectionData[sec.id] = { name: sec.name, score: 0, max: 0, alerts: [], unknowns: [] };
+    if(a){
+      sectionData[sec.id].score += a.score; sectionData[sec.id].max += MAX_SCORE;
+      totalScore += a.score; totalMax += MAX_SCORE;
+      if(q.alert_if && q.alert_msg && q.alert_if.indexOf(a.value) !== -1) sectionData[sec.id].alerts.push(q.alert_msg);
+      if(a.value === "inconnu") sectionData[sec.id].unknowns.push(q.text);
+    }
+  });
+  const globalPct = totalMax > 0 ? Math.round((totalScore / totalMax) * 100) : 0;
+  lines.push("SCORE GLOBAL : " + globalPct + "%");
+  lines.push("");
+  Object.keys(sectionData).forEach(function(k){
+    const s = sectionData[k]; if(s.max === 0) return;
+    const pct = Math.round((s.score / s.max) * 100);
+    lines.push(s.name + " : " + pct + "%");
+    s.alerts.forEach(function(a){ lines.push("  \u26a0 " + a); });
+    s.unknowns.forEach(function(u){ lines.push("  ? " + u); });
+  });
+  return lines.join("\n");
+}
+
+function sendLeadData(formData, onSuccess, onError){
+  initEmailJS();
+  if(typeof emailjs === "undefined"){ onError("EmailJS non charg\u00e9"); return; }
+  const params = {
+    prospect_nom: formData.nom,
+    prospect_prenom: formData.prenom,
+    prospect_email: formData.email,
+    prospect_telephone: formData.telephone,
+    prospect_profil: formData.profil,
+    prospect_nb_restos: formData.nb_restos,
+    prospect_ville: formData.ville,
+    prospect_surface: formData.surface || "Non renseign\u00e9",
+    prospect_prix_cession: formData.prix || "Non renseign\u00e9",
+    prospect_commentaire: formData.commentaire || "",
+    prospect_duree_recherche: formData.duree_recherche || "Non renseign\u00e9",
+    prospect_expert_comptable: formData.expert_comptable + (formData.nom_expert_comptable ? " (" + formData.nom_expert_comptable + ")" : ""),
+    prospect_agent_immo: formData.agent_immo || "Non renseign\u00e9",
+    projet_type: (function(){ var l = { cession_fonds:"Cession de fonds de commerce", droit_bail:"Droit au bail / Nouveau bail" }; return l[state.projectType] || state.projectType; })(),
+    projet_restauration: state.restaurationType || "",
+    projet_cuisson: state.cookingType || "",
+    projet_extraction: state.needsExtraction || "",
+    projet_grande_cuisine: state.grandeCuisine || "",
+    projet_franchiseur: state.franchiseur || "",
+    projet_date_visite: state.dateVisiteLocal || "Non renseign\u00e9",
+    projet_date_cles: state.dateRemiseCles || "Non renseign\u00e9",
+    projet_date_ouverture: state.dateOuverture || "Non renseign\u00e9",
+    audit_resume: buildAuditSummaryForEmail()
+  };
+  emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, params)
+    .then(function(){ onSuccess(); }, function(err){ onError(err && err.text ? err.text : "Erreur"); });
+}
+
+/* ─── LEAD FORM ─── */
+function renderLeadForm(container){
+  const card = createEl("div","card");
+  card.appendChild(createText("h2","","Votre diagnostic est pr\u00eat \u{1F389}"));
+  const intro1 = createText("p","","Score global, alertes par section, points de vigilance et prochaines \u00e9tapes personnalis\u00e9es \u2014 tout est calcul\u00e9.");
+  intro1.style.cssText = "font-size:0.9rem;color:var(--noir);line-height:1.6;margin-bottom:8px"; card.appendChild(intro1);
+  const intro2 = createText("p","","Renseignez vos coordonn\u00e9es pour y acc\u00e9der. Ma\u00eetre Pinet pourra vous recontacter si votre profil le n\u00e9cessite.");
+  intro2.style.cssText = "font-size:0.84rem;color:var(--gris-texte);margin-bottom:16px"; card.appendChild(intro2);
+
+  const grid = createEl("div","form-grid");
+
+  function addField(id, label, type, placeholder, required, fullWidth, isTextarea){
+    const g = createEl("div","form-group" + (fullWidth ? " full-width" : ""));
+    const lb = createEl("label","form-label"); lb.setAttribute("for","field_" + id);
+    lb.textContent = label;
+    if(required){ const s = createEl("span","required"); s.textContent = "*"; lb.appendChild(s); }
+    g.appendChild(lb);
+    var inp;
+    if(isTextarea){
+      inp = createEl("textarea","form-input form-textarea");
+    } else {
+      inp = createEl("input","form-input");
+      inp.type = type || "text";
+    }
+    inp.id = "field_" + id; inp.name = id; inp.placeholder = placeholder || "";
+    if(required) inp.required = true;
+    g.appendChild(inp);
+    g.appendChild(createEl("div","form-error"));
+    grid.appendChild(g);
+    return inp;
+  }
+
+  function addSelect(id, label, options, required, fullWidth){
+    const g = createEl("div","form-group" + (fullWidth ? " full-width" : ""));
+    const lb = createEl("label","form-label"); lb.setAttribute("for","field_" + id);
+    lb.textContent = label;
+    if(required){ const s = createEl("span","required"); s.textContent = "*"; lb.appendChild(s); }
+    g.appendChild(lb);
+    var sel = createEl("select","form-select");
+    sel.id = "field_" + id; sel.name = id;
+    if(required) sel.required = true;
+    var optDef = createEl("option"); optDef.value = ""; optDef.textContent = "S\u00e9lectionnez\u2026"; optDef.disabled = true; optDef.selected = true; sel.appendChild(optDef);
+    options.forEach(function(o){ var opt = createEl("option"); opt.value = o.value; opt.textContent = o.label; sel.appendChild(opt); });
+    g.appendChild(sel);
+    g.appendChild(createEl("div","form-error"));
+    grid.appendChild(g);
+    return sel;
+  }
+
+  function addSeparator(title){
+    var sep = createEl("hr","form-separator"); grid.appendChild(sep);
+    if(title){ var t = createText("div","form-section-title", title); grid.appendChild(t); }
+  }
+
+  /* --- Coordonn\u00e9es --- */
+  var fNom = addField("nom","Nom","text","Votre nom", true, false);
+  var fPrenom = addField("prenom","Pr\u00e9nom","text","Votre pr\u00e9nom", true, false);
+  var fEmail = addField("email","Email","email","votre@email.com", true, false);
+  var fTel = addField("telephone","T\u00e9l\u00e9phone","tel","06 12 34 56 78", true, false);
+
+  /* --- Qualification prospect --- */
+  addSeparator("Votre profil");
+  var fProfil = addSelect("profil","Vous \u00eates\u2026",[
+    { value: "futur_restaurateur", label: "Futur restaurateur (premi\u00e8re ouverture)" },
+    { value: "restaurateur_en_activite", label: "Restaurateur en activit\u00e9 (d\u00e9veloppement)" },
+    { value: "groupe_restauration", label: "Groupe de restauration" },
+    { value: "investisseur", label: "Investisseur" },
+    { value: "agent_immobilier", label: "Agent immobilier / Interm\u00e9diaire" },
+    { value: "autre_profil", label: "Autre" }
+  ], true, false);
+  var fNbRestos = addSelect("nb_restos","Nombre de restaurants actuels",[
+    { value: "0", label: "Aucun \u2014 c\u2019est mon premier" },
+    { value: "1", label: "1 restaurant" },
+    { value: "2_3", label: "2 \u00e0 3 restaurants" },
+    { value: "4_plus", label: "4 restaurants ou plus" }
+  ], true, false);
+  var fDureeRecherche = addSelect("duree_recherche","Depuis combien de temps cherchez-vous un local ?",[
+    { value: "debut", label: "Je commence mes recherches" },
+    { value: "1_3_mois", label: "1 \u00e0 3 mois" },
+    { value: "3_6_mois", label: "3 \u00e0 6 mois" },
+    { value: "6_12_mois", label: "6 \u00e0 12 mois" },
+    { value: "plus_12_mois", label: "Plus de 12 mois" }
+  ], false, false);
+
+  /* --- Accompagnement --- */
+  addSeparator("Votre accompagnement");
+  var fExpertComptable = addSelect("expert_comptable","\u00cates-vous suivi(e) par un expert-comptable ?",[
+    { value: "oui", label: "Oui" },
+    { value: "non", label: "Non, pas encore" }
+  ], false, false);
+  var fNomEC = addField("nom_ec","Nom du cabinet (facultatif)","text","Ex. : Cabinet Dupont", false, false);
+  var fAgentImmo = addSelect("agent_immo","Passez-vous par un agent / courtier en fonds de commerce ?",[
+    { value: "oui_specialise", label: "Oui, sp\u00e9cialis\u00e9 CHR / restauration" },
+    { value: "oui_generaliste", label: "Oui, g\u00e9n\u00e9raliste" },
+    { value: "non", label: "Non, je cherche seul(e)" }
+  ], false, false);
+
+  /* --- Le local --- */
+  addSeparator("Le local vis\u00e9");
+  var fVille = addField("ville","Ville du local","text","Ex. : Lyon, Paris 11e\u2026", true, false);
+  var fSurface = addField("surface","Surface du local (m\u00b2)","text","Ex. : 80", false, false);
+  var fPrix = null;
+  if(isCession()){
+    fPrix = addField("prix","Prix de cession propos\u00e9 (\u20ac)","text","Ex. : 150 000", true, false);
+  } else {
+    fPrix = addField("prix","Droit d\u2019entr\u00e9e propos\u00e9 (\u20ac) \u2014 facultatif","text","Ex. : 30 000", false, false);
+  }
+  var fComment = addField("commentaire","Commentaire (facultatif)","text","D\u00e9crivez votre projet en quelques mots\u2026", false, true, true);
+
+  card.appendChild(grid);
+
+  /* Pre-fill info */
+  if(isCession()){
+    card.appendChild(buildSimulatorCTA());
+  }
+
+  var note = createText("div","form-note","\u{1F512} Vos donn\u00e9es sont transmises uniquement \u00e0 Ma\u00eetre Pinet et ne seront jamais partag\u00e9es.");
+  card.appendChild(note);
+
+  container.appendChild(card);
+
+  var bg = createEl("div","btn-group");
+  var btnSubmit = createText("button","btn btn-primary","Voir mon diagnostic \u2192");
+  btnSubmit.addEventListener("click", function(){
+    /* Validation */
+    var valid = true;
+    var fields = [
+      { el: fNom, name: "nom" },
+      { el: fPrenom, name: "prenom" },
+      { el: fEmail, name: "email" },
+      { el: fTel, name: "telephone" },
+      { el: fProfil, name: "profil" },
+      { el: fNbRestos, name: "nb_restos" },
+      { el: fVille, name: "ville" }
+    ];
+    if(isCession() && fPrix) fields.push({ el: fPrix, name: "prix" });
+    fields.forEach(function(f){
+      var errDiv = f.el.parentElement.querySelector(".form-error");
+      f.el.classList.remove("error");
+      errDiv.textContent = "";
+      if(!f.el.value.trim()){
+        f.el.classList.add("error");
+        errDiv.textContent = "Champ requis";
+        valid = false;
+      }
+    });
+    if(fEmail.value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fEmail.value)){
+      fEmail.classList.add("error");
+      fEmail.parentElement.querySelector(".form-error").textContent = "Email invalide";
+      valid = false;
+    }
+    if(!valid){ showToast("Veuillez remplir les champs obligatoires"); return; }
+
+    /* Collect data */
+    var profilLabels = { futur_restaurateur:"Futur restaurateur (1\u00e8re ouverture)", restaurateur_en_activite:"Restaurateur en activit\u00e9", groupe_restauration:"Groupe de restauration", investisseur:"Investisseur", agent_immobilier:"Agent immobilier / Interm\u00e9diaire", autre_profil:"Autre" };
+    var nbRestosLabels = { "0":"Aucun (premier restaurant)", "1":"1 restaurant", "2_3":"2 \u00e0 3 restaurants", "4_plus":"4 restaurants ou plus" };
+    var dureeLabels = { debut:"D\u00e9bute", "1_3_mois":"1-3 mois", "3_6_mois":"3-6 mois", "6_12_mois":"6-12 mois", plus_12_mois:"+12 mois" };
+    var agentLabels = { oui_specialise:"Oui (sp\u00e9cialis\u00e9 CHR)", oui_generaliste:"Oui (g\u00e9n\u00e9raliste)", non:"Non" };
+    var formData = {
+      nom: fNom.value.trim(),
+      prenom: fPrenom.value.trim(),
+      email: fEmail.value.trim(),
+      telephone: fTel.value.trim(),
+      profil: profilLabels[fProfil.value] || fProfil.value,
+      profil_raw: fProfil.value,
+      nb_restos: nbRestosLabels[fNbRestos.value] || fNbRestos.value,
+      nb_restos_raw: fNbRestos.value,
+      duree_recherche: dureeLabels[fDureeRecherche.value] || fDureeRecherche.value || "Non renseign\u00e9",
+      expert_comptable: fExpertComptable.value === "oui" ? "Oui" : "Non",
+      nom_expert_comptable: fNomEC.value.trim(),
+      agent_immo: agentLabels[fAgentImmo.value] || fAgentImmo.value || "Non renseign\u00e9",
+      ville: fVille.value.trim(),
+      surface: fSurface.value.trim(),
+      prix: fPrix ? fPrix.value.trim() : "",
+      commentaire: fComment.value.trim()
+    };
+
+    /* Send via EmailJS */
+    state.profilRaw = formData.profil_raw;
+    state.nbRestosRaw = formData.nb_restos_raw;
+    card.classList.add("form-sending");
+    btnSubmit.textContent = "Envoi en cours\u2026";
+    sendLeadData(formData, function(){
+      showToast("Informations enregistr\u00e9es !");
+      showScreen(currentIdx + 1);
+    }, function(err){
+      card.classList.remove("form-sending");
+      btnSubmit.textContent = "Voir mon diagnostic \u2192";
+      showToast("Erreur d\u2019envoi \u2014 v\u00e9rifiez votre connexion");
+      console.error("EmailJS error:", err);
+      /* Allow access anyway after error */
+      setTimeout(function(){ showScreen(currentIdx + 1); }, 1500);
+    });
+  });
+  bg.appendChild(btnSubmit);
+  var btnBack = createText("button","btn btn-secondary","\u2190 Revenir aux questions");
+  btnBack.addEventListener("click", function(){ showScreen(currentIdx - 1); });
+  bg.appendChild(btnBack);
+  container.appendChild(bg);
+}
+
+/* ─── HELPERS R\u00c9TROPLANNING ─── */
+function formatDateFr(dateStr){
+  if(!dateStr) return "";
+  var d = new Date(dateStr + "T00:00:00");
+  var jours = ["dim.","lun.","mar.","mer.","jeu.","ven.","sam."];
+  var mois = ["janv.","f\u00e9vr.","mars","avr.","mai","juin","juil.","ao\u00fbt","sept.","oct.","nov.","d\u00e9c."];
+  return jours[d.getDay()] + " " + d.getDate() + " " + mois[d.getMonth()] + " " + d.getFullYear();
+}
+function addDays(dateStr, days){
+  var d = new Date(dateStr + "T00:00:00");
+  d.setDate(d.getDate() + days);
+  return d.toISOString().split("T")[0];
+}
+function addMonths(dateStr, months){
+  var d = new Date(dateStr + "T00:00:00");
+  d.setMonth(d.getMonth() + months);
+  return d.toISOString().split("T")[0];
+}
+
+function buildRetroplanningSteps(){
+  var steps = [];
+  var rpAlerts = [];
+  var v = state.dateVisiteLocal || "";
+  var c = state.dateRemiseCles || "";
+  var o = state.dateOuverture || "";
+  if(!v && !c && !o) return { steps: steps, alerts: rpAlerts };
+
+  /* Helpers pour calculer les \u00e9carts en jours */
+  function daysBetween(d1, d2){ return Math.round((new Date(d2+"T00:00:00") - new Date(d1+"T00:00:00")) / 86400000); }
+
+  if(isCession()){
+    /* ═══ Cession de fonds de commerce ═══ */
+    if(v) steps.push({ date: v, title: "Visite du local", desc: "Inspection physique du local avec audit terrain.", cls: "step-done" });
+
+    /* Promesse : visite + 21j, ou si pas de visite, cl\u00e9s - 4 mois */
+    var datePromesse = v ? addDays(v, 21) : (c ? addMonths(c, -4) : "");
+    var csDesc = "Signature de la promesse sous condition suspensive de financement bancaire.";
+    if(isFranchise()) csDesc = "Signature de la promesse sous conditions suspensives : financement bancaire ET signature du contrat de franchise.";
+    if(datePromesse) steps.push({ date: datePromesse, title: "Promesse de cession (sous CS)", desc: csDesc, duration: "~2 \u00e0 3 semaines apr\u00e8s visite", cls: "step-future" });
+
+    if(isFranchise() && datePromesse){
+      steps.push({ date: addDays(datePromesse, 10), title: "Validation du local par l\u2019architecte franchiseur", desc: "L\u2019architecte d\u00e9sign\u00e9 par le franchiseur visite le local pour valider sa conformit\u00e9 au cahier des charges du r\u00e9seau.", duration: "1 \u00e0 3 semaines", cls: "step-future" });
+    }
+
+    if(isFranchise() && datePromesse){
+      steps.push({ date: addDays(datePromesse, 30), title: "Signature du contrat de franchise", desc: "N\u00e9gociation puis signature du contrat de franchise. N\u2019h\u00e9sitez pas \u00e0 n\u00e9gocier : droit d\u2019entr\u00e9e, royalties, exclusivit\u00e9 territoriale, dur\u00e9e\u2026", duration: "~3 \u00e0 5 semaines apr\u00e8s promesse", cls: "step-future" });
+    }
+
+    if(isFuturRestaurateur() && datePromesse){
+      steps.push({ date: addDays(datePromesse, 14), title: "Formation permis d\u2019exploitation & licence", desc: "Formation obligatoire pour les primo-acc\u00e9dants : permis d\u2019exploitation (2,5 jours) et, si d\u00e9bit de boissons alcooliques, formation sp\u00e9cifique licence (1 jour).", duration: "3 \u00e0 4 jours", cls: "step-future" });
+    }
+
+    var dateFinancement = datePromesse ? addMonths(datePromesse, 2) : "";
+    if(dateFinancement) steps.push({ date: dateFinancement, title: "Obtention du financement", desc: "D\u00e9lai habituel pour le pr\u00eat bancaire (lev\u00e9e de la condition suspensive).", duration: "~45 \u00e0 90 jours", cls: "step-future" });
+
+    var dateCession = c || (dateFinancement ? addDays(dateFinancement, 21) : "");
+    if(dateCession) steps.push({ date: dateCession, title: "Acte r\u00e9it\u00e9ratif de cession (remise des cl\u00e9s)", desc: "Signature de l\u2019acte d\u00e9finitif de cession du fonds de commerce.", cls: "step-current" });
+
+    /* Alerte : cl\u00e9s saisies avant le financement calcul\u00e9 */
+    if(c && dateFinancement && c < dateFinancement){
+      rpAlerts.push("\u26A0\uFE0F Votre date de remise des cl\u00e9s (" + formatDateFr(c) + ") arrive avant la date estim\u00e9e d\u2019obtention du financement (" + formatDateFr(dateFinancement) + "). En g\u00e9n\u00e9ral, comptez 3 \u00e0 4 mois entre la promesse et l\u2019acte d\u00e9finitif, mais ce d\u00e9lai peut \u00eatre r\u00e9duit si le financement est d\u00e9j\u00e0 acquis ou si les parties acc\u00e9l\u00e8rent le processus.");
+    }
+    /* Alerte : visite \u2192 cl\u00e9s trop court pour une cession */
+    if(v && dateCession && daysBetween(v, dateCession) < 60){
+      rpAlerts.push("\u26A0\uFE0F Seulement " + daysBetween(v, dateCession) + " jours entre la visite et la remise des cl\u00e9s. En cession de fonds, les \u00e9tapes (promesse, financement, acte) n\u00e9cessitent g\u00e9n\u00e9ralement 3 \u00e0 5 mois. Ce d\u00e9lai peut \u00eatre raccourci au cas par cas, mais il s\u2019agit d\u2019un calendrier tr\u00e8s tendu.");
+    }
+
+    if(dateCession){
+      steps.push({ date: addDays(dateCession, 7), title: "D\u00e9but des travaux / am\u00e9nagement", desc: "Travaux de mise en conformit\u00e9, am\u00e9nagement, d\u00e9coration.", duration: "1 \u00e0 3 mois selon ampleur", cls: "step-future" });
+    }
+
+    if(isFranchise() && dateCession){
+      steps.push({ date: addDays(dateCession, 14), title: "Formation franchiseur", desc: "Formation initiale impos\u00e9e par le r\u00e9seau.", duration: "2 \u00e0 6 semaines", cls: "step-future" });
+    }
+
+    var dateOuv = o || (dateCession ? addMonths(dateCession, 2) : "");
+    if(dateOuv) steps.push({ date: dateOuv, title: "Ouverture du restaurant", desc: "Accueil des premiers clients. D\u00e9but de l\u2019exploitation.", cls: "step-future" });
+
+    /* Alerte : cl\u00e9s \u2192 ouverture trop court */
+    if(dateCession && dateOuv && daysBetween(dateCession, dateOuv) < 30){
+      rpAlerts.push("\u26A0\uFE0F Seulement " + daysBetween(dateCession, dateOuv) + " jours entre la remise des cl\u00e9s et l\u2019ouverture. Pr\u00e9voyez en g\u00e9n\u00e9ral 1 \u00e0 2 mois pour les travaux et l\u2019am\u00e9nagement, voire davantage selon l\u2019ampleur du chantier. Ce d\u00e9lai varie au cas par cas.");
+    }
+
+  } else {
+    /* ═══ Droit au bail / nouveau bail ═══ */
+    if(v) steps.push({ date: v, title: "Visite du local", desc: "Inspection physique du local.", cls: "step-done" });
+
+    var dateOffre = v ? addDays(v, 14) : (c ? addMonths(c, -2) : "");
+    if(dateOffre) steps.push({ date: dateOffre, title: "Offre / n\u00e9gociation", desc: "Offre au bailleur ou n\u00e9gociation du droit au bail avec le c\u00e9dant.", duration: "~1 \u00e0 2 semaines", cls: "step-future" });
+
+    if(isFranchise() && dateOffre){
+      steps.push({ date: addDays(dateOffre, 7), title: "Validation du local par l\u2019architecte franchiseur", desc: "L\u2019architecte du franchiseur visite le local pour valider sa conformit\u00e9 au cahier des charges.", duration: "1 \u00e0 3 semaines", cls: "step-future" });
+    }
+
+    var dateSignature = dateOffre ? addDays(dateOffre, 21) : "";
+    if(dateSignature) steps.push({ date: dateSignature, title: "Signature du bail commercial", desc: "Signature du bail ou de la cession de droit au bail.", duration: "~2 \u00e0 3 semaines", cls: "step-future" });
+
+    if(isFranchise() && dateSignature){
+      steps.push({ date: addDays(dateSignature, 14), title: "Signature du contrat de franchise", desc: "N\u00e9gociation et signature du contrat de franchise. Pensez \u00e0 faire analyser le DIP et le contrat par un avocat sp\u00e9cialis\u00e9.", duration: "~2 \u00e0 4 semaines", cls: "step-future" });
+    }
+
+    if(isFuturRestaurateur() && dateSignature){
+      steps.push({ date: addDays(dateSignature, 7), title: "Formation permis d\u2019exploitation & licence", desc: "Formation obligatoire pour les primo-acc\u00e9dants.", duration: "3 \u00e0 4 jours", cls: "step-future" });
+    }
+
+    var dateCles2 = c || (dateSignature ? addDays(dateSignature, 7) : "");
+    if(dateCles2) steps.push({ date: dateCles2, title: "Remise des cl\u00e9s", desc: "Prise de possession du local.", cls: "step-current" });
+
+    /* Alerte : visite \u2192 cl\u00e9s trop court pour droit au bail */
+    if(v && dateCles2 && daysBetween(v, dateCles2) < 30){
+      rpAlerts.push("\u26A0\uFE0F Seulement " + daysBetween(v, dateCles2) + " jours entre la visite et la remise des cl\u00e9s. Pr\u00e9voyez le temps de n\u00e9gociation et de signature du bail. Ce d\u00e9lai peut varier selon la r\u00e9activit\u00e9 des parties.");
+    }
+
+    if(dateCles2){
+      steps.push({ date: addDays(dateCles2, 7), title: "Autorisations administratives & travaux", desc: "D\u00e9p\u00f4t des demandes : ERP, d\u00e9clarations pr\u00e9alables, permis de construire. Attention : exemption PMR = 4 mois de d\u00e9lai pr\u00e9fecture.", duration: "1 \u00e0 4 mois", cls: "step-future" });
+    }
+
+    if(isFranchise() && dateCles2){
+      steps.push({ date: addDays(dateCles2, 14), title: "Formation franchiseur", desc: "Formation initiale impos\u00e9e par le r\u00e9seau.", duration: "2 \u00e0 6 semaines", cls: "step-future" });
+    }
+
+    var dateOuv2 = o || (dateCles2 ? addMonths(dateCles2, 3) : "");
+    if(dateOuv2) steps.push({ date: dateOuv2, title: "Ouverture du restaurant", desc: "Accueil des premiers clients.", cls: "step-future" });
+
+    /* Alerte : cl\u00e9s \u2192 ouverture trop court */
+    if(dateCles2 && dateOuv2 && daysBetween(dateCles2, dateOuv2) < 45){
+      rpAlerts.push("\u26A0\uFE0F Seulement " + daysBetween(dateCles2, dateOuv2) + " jours entre la remise des cl\u00e9s et l\u2019ouverture. En droit au bail, pr\u00e9voyez g\u00e9n\u00e9ralement 3 \u00e0 4 mois pour les autorisations, travaux et am\u00e9nagement. Ce d\u00e9lai peut \u00eatre raccourci si le local n\u00e9cessite peu d\u2019interventions.");
+    }
+  }
+
+  /* TRI CHRONOLOGIQUE — toujours */
+  steps.sort(function(a, b){ return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
+
+  return { steps: steps, alerts: rpAlerts };
+}
+
+/* ─── SECTION PEDAGOGICAL EXPLANATION ─── */
+function getSectionExplanation(sectionId, pct){
+  var explanations = {
+    bail: {
+      high: "Le bail commercial pr\u00e9sente un profil favorable : dur\u00e9e suffisante, destination compatible et loyer coh\u00e9rent. C\u2019est une base solide pour s\u00e9curiser votre projet.",
+      mid: "Certains points du bail m\u00e9ritent attention : v\u00e9rifiez la dur\u00e9e restante, la clause de destination et le taux d\u2019effort. Un avocat sp\u00e9cialis\u00e9 peut n\u00e9gocier des am\u00e9liorations avant signature.",
+      low: "Le bail pr\u00e9sente des risques importants. Un bail court, une destination restrictive ou un loyer excessif peuvent compromettre la viabilit\u00e9 de votre projet. Faites-le analyser avant tout engagement."
+    },
+    copro: {
+      high: "Pas de travaux majeurs de copropri\u00e9t\u00e9 signal\u00e9s. Situation favorable.",
+      mid: "Des travaux de copropri\u00e9t\u00e9 sont \u00e0 anticiper. V\u00e9rifiez les PV d\u2019assembl\u00e9e g\u00e9n\u00e9rale pour estimer les appels de fonds \u00e0 venir.",
+      low: "Des travaux de copropri\u00e9t\u00e9 importants sont pr\u00e9vus. Cela repr\u00e9sente un co\u00fbt suppl\u00e9mentaire significatif \u00e0 int\u00e9grer dans votre budget."
+    },
+    chalandise: {
+      high: "L\u2019emplacement est tr\u00e8s favorable : bonne visibilit\u00e9, flux pi\u00e9ton important, fa\u00e7ade et vitrine attractives. C\u2019est un atout commercial majeur.",
+      mid: "L\u2019emplacement pr\u00e9sente un potentiel correct mais certains points (visibilit\u00e9, terrasse, fa\u00e7ade) n\u00e9cessitent des investissements pour maximiser l\u2019attractivit\u00e9.",
+      low: "L\u2019emplacement pr\u00e9sente des faiblesses significatives. Un flux pi\u00e9ton faible, une vitrine limit\u00e9e ou une forte concurrence locale p\u00e8sent sur le potentiel commercial."
+    },
+    securite: {
+      high: "Le local r\u00e9pond aux exigences de s\u00e9curit\u00e9 ERP. La cat\u00e9gorie est adapt\u00e9e et les issues de secours conformes.",
+      mid: "Certains points de s\u00e9curit\u00e9 ERP n\u00e9cessitent une mise en conformit\u00e9. Anticipez les travaux et d\u00e9marches administratives avant l\u2019ouverture.",
+      low: "Des non-conformit\u00e9s ERP importantes sont identifi\u00e9es. La mise en conformit\u00e9 est un pr\u00e9alable obligatoire \u00e0 l\u2019ouverture et peut repr\u00e9senter un co\u00fbt et un d\u00e9lai significatifs."
+    },
+    extraction: {
+      high: "Le syst\u00e8me d\u2019extraction est conforme et adapt\u00e9 \u00e0 votre activit\u00e9. C\u2019est un point fort : l\u2019extraction est le premier facteur de blocage en restauration.",
+      mid: "L\u2019extraction existe mais n\u00e9cessite des am\u00e9liorations (chemisage, diam\u00e8tre, conformit\u00e9 RSD). Pr\u00e9voyez un budget de mise aux normes.",
+      low: "L\u2019extraction est insuffisante ou absente. C\u2019est un point bloquant majeur en restauration. Sans conduite conforme, l\u2019exploitation peut \u00eatre impossible."
+    },
+    sanitaire: {
+      high: "Les conditions sanitaires et d\u2019hygi\u00e8ne sont satisfaisantes : marche en avant respect\u00e9e, \u00e9quipements conformes.",
+      mid: "Des am\u00e9liorations sanitaires sont n\u00e9cessaires. Anticipez les mises aux normes (bac \u00e0 graisse, vestiaires, marche en avant).",
+      low: "Les conditions sanitaires pr\u00e9sentent des lacunes importantes. Une refonte de l\u2019organisation de la cuisine et des \u00e9quipements sanitaires sera n\u00e9cessaire."
+    },
+    travaux: {
+      high: "Le local est en bon \u00e9tat et les travaux \u00e0 pr\u00e9voir sont minimes. C\u2019est un avantage pour votre calendrier et votre budget.",
+      mid: "Des travaux sont \u00e0 pr\u00e9voir. Assurez-vous d\u2019avoir des devis r\u00e9alistes et v\u00e9rifiez les autorisations n\u00e9cessaires.",
+      low: "Des travaux importants sont n\u00e9cessaires. Le co\u00fbt et les d\u00e9lais peuvent impacter significativement votre projet. Consultez un ma\u00eetre d\u2019\u0153uvre sp\u00e9cialis\u00e9."
+    },
+    materiel: {
+      high: "Le mat\u00e9riel repris est en bon \u00e9tat et bien document\u00e9. Cela r\u00e9duit le besoin d\u2019investissement suppl\u00e9mentaire.",
+      mid: "Le mat\u00e9riel n\u00e9cessite une attention particuli\u00e8re : v\u00e9rifiez l\u2019inventaire, les cr\u00e9dits-bails et l\u2019\u00e9tat de chaque \u00e9quipement.",
+      low: "Le mat\u00e9riel pr\u00e9sente des faiblesses : \u00e9quipements v\u00e9tustes, cr\u00e9dits-bails non identifi\u00e9s ou inventaire incomplet. Pr\u00e9voyez un budget de remplacement."
+    },
+    operationnel: {
+      high: "Le cadre op\u00e9rationnel et juridique est bien document\u00e9 et ne pr\u00e9sente pas de risque majeur. Bonne base pour la n\u00e9gociation.",
+      mid: "Certains \u00e9l\u00e9ments op\u00e9rationnels et juridiques sont \u00e0 compl\u00e9ter. Demandez les documents manquants avant de vous engager.",
+      low: "Des risques op\u00e9rationnels et juridiques importants sont identifi\u00e9s. Un accompagnement professionnel est fortement recommand\u00e9."
+    }
+  };
+  var sec = explanations[sectionId] || { high: "Section favorable.", mid: "Section \u00e0 surveiller.", low: "Section pr\u00e9sentant des risques." };
+  if(pct >= 70) return sec.high;
+  if(pct >= 40) return sec.mid;
+  return sec.low;
+}
+
+/* ─── RESULTS ─── */
+function renderResult(container){
+  const sectionScores = {}; const sectionDetails = {}; const alerts = []; let totalScore = 0, totalMax = 0;
+  sections.forEach(function(sec){ sectionScores[sec.id] = { score: 0, max: 0, name: sec.name, icon: sec.icon }; sectionDetails[sec.id] = []; });
+
+  const activeQs = getActiveQuestions(); const unanswered = []; const unknowns = [];
+  activeQs.forEach(function(item){
+    const q = item.question, sec = item.section, a = state.answers[q.id];
+    if(a){
+      sectionScores[sec.id].score += a.score; sectionScores[sec.id].max += MAX_SCORE;
+      totalScore += a.score; totalMax += MAX_SCORE;
+      sectionDetails[sec.id].push({ question: q.text, answer: a.value, score: a.score, maxScore: MAX_SCORE, label: q.options ? q.options.filter(function(o){ return o.value === a.value; }).map(function(o){ return o.label; })[0] : a.value });
+      if(q.alert_if && q.alert_msg && q.alert_if.indexOf(a.value) !== -1) alerts.push({ section: sec.name, msg: q.alert_msg, level: "red" });
+      if(a.value === "inconnu") unknowns.push(item);
+    } else { unanswered.push(item); }
+  });
+
+  const globalPct = totalMax > 0 ? Math.round((totalScore / totalMax) * 100) : 0;
+  const globalColor = getScoreColor(globalPct);
+
+  /* Profile summary */
+  renderProfileTags(container);
+
+  /* Score with animated counter */
+  const scoreCard = createEl("div","card");
+  scoreCard.classList.add("card-animate");
+  const gd = createEl("div","global-score");
+  const sn = createText("div","score-number score-animated", "0%"); sn.style.color = globalColor; sn.id = "animatedScore"; gd.appendChild(sn);
+  gd.appendChild(createText("div","score-label-text","Indice de vigilance")); scoreCard.appendChild(gd);
+  /* Animate counter */
+  setTimeout(function(){
+    var current = 0;
+    var target = globalPct;
+    var duration = 1200;
+    var startTime = null;
+    function animateCount(ts){
+      if(!startTime) startTime = ts;
+      var progress = Math.min((ts - startTime) / duration, 1);
+      /* easeOutCubic */
+      var eased = 1 - Math.pow(1 - progress, 3);
+      current = Math.round(eased * target);
+      var el = document.getElementById("animatedScore");
+      if(el) el.textContent = current + "%";
+      if(progress < 1) requestAnimationFrame(animateCount);
+    }
+    requestAnimationFrame(animateCount);
+  }, 400);
+
+  let interp;
+  if(globalPct >= 70) interp = "La majorit\u00e9 des points v\u00e9rifi\u00e9s ne pr\u00e9sentent pas de signal d\u2019alerte. Restez attentif aux \u00e9l\u00e9ments signal\u00e9s ci-dessous \u2014 un accompagnement professionnel permettra de les confirmer.";
+  else if(globalPct >= 40) interp = "Plusieurs \u00e9l\u00e9ments m\u00e9ritent une v\u00e9rification approfondie avant de vous engager. Ce score ne signifie pas que le local est inadapt\u00e9, mais que des points de vigilance doivent \u00eatre lev\u00e9s.";
+  else interp = "De nombreux points de vigilance ont \u00e9t\u00e9 relev\u00e9s. Cela ne disqualifie pas n\u00e9cessairement ce local, mais un accompagnement professionnel est fortement recommand\u00e9 pour s\u00e9curiser votre d\u00e9cision.";
+  const ip = createText("p","", interp); ip.style.cssText = "text-align:center;font-size:0.85rem;color:var(--gris-texte);line-height:1.6"; scoreCard.appendChild(ip);
+
+  if(unanswered.length > 0){
+    const sn2 = createText("p","", unanswered.length + " question(s) non r\u00e9pondue(s) \u2014 non comptabilis\u00e9e(s) dans le score.");
+    sn2.style.cssText = "text-align:center;font-size:0.78rem;color:var(--orange-warning);margin-top:8px"; scoreCard.appendChild(sn2);
+  }
+  container.appendChild(scoreCard);
+
+  /* Skipped sections note */
+  var skippedNames = [];
+  getActiveSections().forEach(function(s){ if(state.skippedSections[s.id]) skippedNames.push(s.icon + " " + s.name); });
+  if(skippedNames.length > 0){
+    const skNote = createText("p","","Sections non \u00e9valu\u00e9es (saut\u00e9es) : " + skippedNames.join(", ") + ". Ces sections ne sont pas comptabilis\u00e9es dans le score global.");
+    skNote.style.cssText = "text-align:center;font-size:0.78rem;color:var(--orange-warning);margin-top:8px;line-height:1.5"; scoreCard.appendChild(skNote);
+  }
+
+  /* Vigilance box — repositioning the purpose of the score */
+  var vigBox = createEl("div","vigilance-box");
+  vigBox.appendChild(createText("h3","","\u{1F4CB} Ce score est un indicateur, pas un verdict"));
+  var vigP = createText("p","","L\u2019objectif de ce diagnostic n\u2019est pas de dire si ce local est \u00ab\u00a0bon\u00a0\u00bb ou \u00ab\u00a0mauvais\u00a0\u00bb. C\u2019est de vous donner une grille de lecture structur\u00e9e pour identifier les points de vigilance \u00e0 v\u00e9rifier avec un professionnel. Chaque alerte ci-dessous est une question \u00e0 creuser, pas une r\u00e9ponse d\u00e9finitive.");
+  vigBox.appendChild(vigP);
+  container.appendChild(vigBox);
+
+  /* Section detail with bars */
+  const dc = createEl("div","card"); dc.appendChild(createText("h3","","Synth\u00e8se par section"));
+  var activeSecs = getActiveSections();
+  activeSecs.forEach(function(secDef){
+    var k = secDef.id;
+    if(state.skippedSections[k]){
+      /* Show skipped section */
+      const sd = createEl("div","score-section");
+      const ld = createEl("div","score-label");
+      ld.appendChild(createText("span","score-name", secDef.icon + " " + secDef.name));
+      const vs = createText("span","score-value","Non \u00e9valu\u00e9e"); vs.style.cssText = "color:var(--orange-warning);font-style:italic;font-size:0.75rem"; ld.appendChild(vs); sd.appendChild(ld);
+      const bd = createEl("div","score-bar"); const fd = createEl("div","score-bar-fill");
+      fd.style.background = "var(--orange-warning)"; fd.style.opacity = "0.3"; fd.setAttribute("data-width", "100"); bd.appendChild(fd); sd.appendChild(bd); dc.appendChild(sd);
+      return;
+    }
+    const s = sectionScores[k]; if(!s || s.max === 0) return;
+    const pct = Math.round((s.score / s.max) * 100); const col = getScoreColor(pct);
+    const sd = createEl("div","score-section");
+    const ld = createEl("div","score-label");
+    ld.appendChild(createText("span","score-name", s.icon + " " + s.name));
+    const vs = createText("span","score-value", pct + "%"); vs.style.color = col; ld.appendChild(vs); sd.appendChild(ld);
+    const bd = createEl("div","score-bar"); const fd = createEl("div","score-bar-fill");
+    fd.style.background = col; fd.setAttribute("data-width", pct); bd.appendChild(fd); sd.appendChild(bd); dc.appendChild(sd);
+  });
+  container.appendChild(dc);
+  setTimeout(function(){ document.querySelectorAll(".score-bar-fill").forEach(function(b){ b.style.width = b.getAttribute("data-width") + "%"; }); }, BAR_ANIM_DELAY);
+
+  /* Detailed pedagogical report per section */
+  const detailCard = createEl("div","card"); detailCard.appendChild(createText("h2","","Rapport d\u00e9taill\u00e9 par section"));
+  detailCard.appendChild(createText("p","","Analyse approfondie de chaque th\u00e9matique avec le d\u00e9tail de vos r\u00e9ponses et l\u2019explication des enjeux."));
+
+  activeSecs.forEach(function(secDef){
+    var k = secDef.id;
+    if(state.skippedSections[k]){
+      const report = createEl("div","section-report");
+      report.style.borderLeftColor = "var(--orange-warning)"; report.style.opacity = "0.65";
+      const titleRow = createEl("div","section-report-title");
+      titleRow.appendChild(document.createTextNode(secDef.icon + " " + secDef.name));
+      const badge = createText("span","section-report-score","Non \u00e9valu\u00e9e");
+      badge.style.cssText = "background:var(--orange-warning);color:var(--blanc)";
+      titleRow.appendChild(badge); report.appendChild(titleRow);
+      report.appendChild(createText("div","section-report-detail","Cette section a \u00e9t\u00e9 saut\u00e9e. Les questions correspondantes n\u2019ont pas \u00e9t\u00e9 prises en compte dans le score global. Pour un diagnostic complet, nous vous recommandons d\u2019y revenir."));
+      detailCard.appendChild(report); return;
+    }
+    const s = sectionScores[k]; if(!s || s.max === 0) return;
+    const pct = Math.round((s.score / s.max) * 100); const col = getScoreColor(pct);
+    const report = createEl("div","section-report");
+    report.style.borderLeftColor = col;
+
+    const titleRow = createEl("div","section-report-title");
+    titleRow.appendChild(document.createTextNode(s.icon + " " + s.name));
+    const badge = createText("span","section-report-score", pct + "%");
+    badge.style.cssText = "background:" + col + ";color:" + (pct >= 40 ? "var(--noir)" : "var(--blanc)");
+    titleRow.appendChild(badge);
+    report.appendChild(titleRow);
+
+    /* Pedagogical explanation */
+    report.appendChild(createText("div","section-report-detail", getSectionExplanation(k, pct)));
+
+    /* Detail of each answer */
+    var details = sectionDetails[k];
+    if(details.length > 0){
+      details.forEach(function(d){
+        var item = createEl("div","section-report-item");
+        var dotCol = d.score >= 2.5 ? "var(--vert-ok)" : d.score >= 1.5 ? "var(--orange-warning)" : d.score === 0 ? "var(--gris-texte)" : "var(--rouge-risque)";
+        var dot = createEl("div","item-dot"); dot.style.background = dotCol; item.appendChild(dot);
+        var textDiv = createEl("div");
+        textDiv.appendChild(createText("div","item-label", d.question));
+        textDiv.appendChild(createText("div","item-answer", "\u2192 " + (d.label || d.answer)));
+        item.appendChild(textDiv);
+        report.appendChild(item);
+      });
+    }
+    detailCard.appendChild(report);
+  });
+  container.appendChild(detailCard);
+
+  /* Alerts */
+  if(alerts.length > 0){
+    const ac = createEl("div","card"); ac.appendChild(createText("h3","","\u26a0\uFE0F Points de vigilance"));
+    ac.appendChild(createText("p","","Ces alertes n\u00e9cessitent une attention particuli\u00e8re. Chaque point identifi\u00e9 peut avoir un impact significatif sur votre projet."));
+    alerts.forEach(function(a){
+      const it = createEl("div","alert-item"); it.appendChild(createEl("div","alert-dot " + a.level));
+      const td = createEl("div"); td.appendChild(createText("strong","", a.section));
+      td.appendChild(document.createTextNode(" \u2014 " + a.msg)); it.appendChild(td); ac.appendChild(it);
+    });
+    container.appendChild(ac);
+  }
+
+  /* Unknowns */
+  if(unknowns.length > 0){
+    const uc = createEl("div","card"); uc.appendChild(createText("h3","","\u2753 Points \u00e0 v\u00e9rifier"));
+    uc.appendChild(createText("p","","Vous avez r\u00e9pondu \u00ab\u00a0Je ne sais pas\u00a0\u00bb \u00e0 ces questions. Il est essentiel de les clarifier avant de vous engager :"));
+    unknowns.forEach(function(item){
+      const row = createEl("div","inconnu-item"); row.appendChild(createEl("div","alert-dot orange"));
+      row.appendChild(createText("div","", item.section.icon + " " + item.question.text)); uc.appendChild(row);
+    });
+    container.appendChild(uc);
+  }
+
+  /* R\u00e9troplanning */
+  var rpResult = buildRetroplanningSteps();
+  var rpSteps = rpResult.steps;
+  var rpAlerts = rpResult.alerts;
+  if(rpSteps.length > 0){
+    const rpCard = createEl("div","card");
+    rpCard.appendChild(createText("h2","","\u{1F4C5} R\u00e9troplanning de votre projet"));
+    rpCard.appendChild(createText("p","","Estimation indicative des \u00e9tapes cl\u00e9s, bas\u00e9e sur les dates que vous avez renseign\u00e9es et les d\u00e9lais habituellement constat\u00e9s."));
+
+    /* Alertes calendrier dans le r\u00e9troplanning */
+    if(rpAlerts.length > 0){
+      rpAlerts.forEach(function(msg){
+        var al = createEl("div","info-box");
+        al.style.borderLeftColor = "var(--orange-warning)";
+        al.style.background = "rgba(244,164,53,0.06)";
+        al.style.marginBottom = "12px";
+        al.textContent = msg;
+        rpCard.appendChild(al);
+      });
+    }
+
+    const timeline = createEl("div","timeline");
+    rpSteps.forEach(function(step){
+      const el = createEl("div","timeline-step " + step.cls);
+      if(step.date) el.appendChild(createText("div","timeline-date", formatDateFr(step.date)));
+      el.appendChild(createText("div","timeline-title", step.title));
+      el.appendChild(createText("div","timeline-desc", step.desc));
+      if(step.duration) el.appendChild(createText("span","timeline-duration", step.duration));
+      timeline.appendChild(el);
+    });
+    rpCard.appendChild(timeline);
+
+    const rpDisc = createEl("div","disclaimer"); rpDisc.style.marginTop = "16px";
+    rpDisc.appendChild(createText("strong","","\u00c0 propos de ce r\u00e9troplanning : "));
+    rpDisc.appendChild(document.createTextNode("Les d\u00e9lais indiqu\u00e9s sont des fourchettes larges, calcul\u00e9es sur la base des dur\u00e9es habituellement constat\u00e9es. Chaque dossier est diff\u00e9rent : selon les parties en pr\u00e9sence, la r\u00e9activit\u00e9 des \u00e9tablissements bancaires, la nature des travaux ou la complexit\u00e9 administrative, ces d\u00e9lais peuvent \u00eatre significativement raccourcis ou allong\u00e9s. " + (isCession() ? "En cession de fonds de commerce, la p\u00e9riode entre la promesse et l\u2019acte d\u00e9finitif varie g\u00e9n\u00e9ralement de 1,5 \u00e0 3 mois, mais peut \u00eatre r\u00e9duite si le financement est d\u00e9j\u00e0 acquis." : "En droit au bail, le processus peut \u00eatre plus rapide, notamment en l\u2019absence de travaux lourds, mais les autorisations administratives (ERP, PMR) peuvent allonger consid\u00e9rablement les d\u00e9lais.") + " Ce calendrier ne se substitue pas \u00e0 un accompagnement professionnel adapt\u00e9 \u00e0 votre situation."));
+    rpCard.appendChild(rpDisc);
+    container.appendChild(rpCard);
+  }
+
+  /* Franchise info box */
+  if(isFranchise()){
+    const frCard = createEl("div","card");
+    frCard.appendChild(createText("h3","","\u{1F4CB} Focus : contrat de franchise"));
+    const frInfo = createEl("div","info-box"); frInfo.style.marginBottom = "12px";
+    frInfo.appendChild(createText("span","info-title","N\u00e9gociation du contrat de franchise"));
+    frInfo.appendChild(createText("p","","Le contrat de franchise n\u2019est pas un contrat d\u2019adh\u00e9sion. Plusieurs clauses sont n\u00e9gociables : droit d\u2019entr\u00e9e, taux de redevances, exclusivit\u00e9 territoriale, dur\u00e9e du contrat, conditions de renouvellement et de sortie. Faites-le analyser par un avocat avant signature."));
+    frCard.appendChild(frInfo);
+    const frInfo2 = createEl("div","info-box");
+    frInfo2.appendChild(createText("span","info-title","Validation du local par le franchiseur"));
+    frInfo2.appendChild(createText("p","","La plupart des r\u00e9seaux de franchise exigent la validation du local par leur architecte avant d\u2019autoriser l\u2019installation. Cette \u00e9tape conditionne souvent la signature du contrat de franchise et peut rallonger les d\u00e9lais. Assurez-vous que cette condition suspensive figure bien dans la promesse."));
+    frCard.appendChild(frInfo2);
+    if(isCession()){
+      const frInfo3 = createEl("div","info-box");
+      frInfo3.appendChild(createText("span","info-title","Condition suspensive franchise dans la promesse"));
+      frInfo3.appendChild(createText("p","","En cession de fonds de commerce, la promesse doit imp\u00e9rativement inclure une condition suspensive li\u00e9e \u00e0 la signature du contrat de franchise. Sans cette clause, vous seriez engag\u00e9 m\u00eame si le franchiseur refuse le local ou le candidat."));
+      frCard.appendChild(frInfo3);
+    }
+    container.appendChild(frCard);
+  }
+
+  /* Alerte ERP/PMR pour droit au bail avec travaux lourds */
+  if(isDroitBail()){
+    const erpCard = createEl("div","card");
+    erpCard.appendChild(createText("h3","","\u26a0\ufe0f Alerte : autorisations administratives"));
+    const erpInfo = createEl("div","info-box"); erpInfo.style.borderLeftColor = "var(--orange-warning)";
+    erpInfo.appendChild(createText("span","info-title","D\u00e9lais ERP, PMR et autorisations d\u2019urbanisme"));
+    erpInfo.appendChild(createText("p","","En droit au bail ou local nu n\u00e9cessitant des travaux importants, anticipez les d\u00e9lais administratifs. Si le local n\u2019est pas encore class\u00e9 ERP, la proc\u00e9dure d\u2019autorisation peut prendre plusieurs mois. Les d\u00e9clarations pr\u00e9alables de travaux et permis de construire s\u2019ajoutent au calendrier."));
+    erpCard.appendChild(erpInfo);
+    const pmrInfo = createEl("div","info-box"); pmrInfo.style.borderLeftColor = "var(--rouge-risque)";
+    pmrInfo.appendChild(createText("span","info-title","Exemption PMR : d\u00e9lai de 4 mois"));
+    pmrInfo.appendChild(createText("p","","Si les toilettes ou l\u2019acc\u00e8s ne sont pas aux normes PMR et que vous souhaitez demander une exemption, la pr\u00e9fecture dispose d\u2019un d\u00e9lai de 4 mois pour r\u00e9pondre. \u00c0 Paris notamment, le silence de l\u2019administration est fr\u00e9quent \u2014 et lorsqu\u2019elle r\u00e9pond, c\u2019est souvent pour refuser l\u2019exemption. Int\u00e9grez ce d\u00e9lai dans votre r\u00e9troplanning."));
+    erpCard.appendChild(pmrInfo);
+    container.appendChild(erpCard);
+  }
+
+  /* Next steps */
+  const nc = createEl("div","card"); nc.appendChild(createText("h3","","Prochaines \u00e9tapes recommand\u00e9es"));
+  const sl = createEl("ul","result-checklist");
+  let steps = [];
+  if(isCession()) steps.push("Faites analyser le bail par un avocat","Faites auditer les bilans par un expert-comptable","V\u00e9rifiez le nantissement aupr\u00e8s du greffe");
+  else steps.push("Faites analyser le bail commercial par un avocat");
+  steps.push("Consultez un architecte ou ma\u00eetre d\u2019\u0153uvre pour les travaux","V\u00e9rifiez la conformit\u00e9 ERP aupr\u00e8s de la mairie ou pr\u00e9fecture");
+  if(needsExtraction()) steps.push("Faites r\u00e9aliser un diagnostic extraction par un professionnel agr\u00e9\u00e9");
+  if(isGrandeCuisine()) steps.push("Faites v\u00e9rifier la conformit\u00e9 \u00abgrande cuisine\u00bb (extinction automatique, arr\u00eat d\u2019urgence)");
+  if(isFranchise()) steps.push("Faites v\u00e9rifier la compatibilit\u00e9 bail / contrat de franchise par un avocat","Analysez le DIP avant toute signature","Faites valider le local par l\u2019architecte du franchiseur");
+  if(isFuturRestaurateur()) steps.push("Inscrivez-vous \u00e0 la formation permis d\u2019exploitation (2,5 jours) d\u00e8s la signature de la promesse","Si d\u00e9bit de boissons : suivez la formation licence sp\u00e9cifique (1 jour)");
+  if(isDroitBail()) steps.push("Anticipez les d\u00e9lais d\u2019autorisation ERP et les demandes de d\u00e9rogation PMR (4 mois)");
+  steps.push("Pr\u00e9parez votre business plan avec le co\u00fbt r\u00e9el des travaux et mises en conformit\u00e9");
+  if(isCession()) steps.push("Estimez la valeur du fonds avec notre simulateur de valorisation restaurant");
+  steps.forEach(function(s){ const li = createEl("li"); li.appendChild(createText("span","check-icon","\u2192")); li.appendChild(createText("span","",s)); sl.appendChild(li); });
+  nc.appendChild(sl);
+  if(isCession()){
+    const simLink = createEl("div","info-box"); simLink.style.marginTop = "16px";
+    simLink.appendChild(createText("span","info-title","Simulateur de valorisation restaurant"));
+    const linkText = createText("span","","Estimez le vrai prix du fonds de commerce que vous envisagez de reprendre : ");
+    simLink.appendChild(linkText);
+    const a = createEl("a"); a.textContent = "Acc\u00e9der au simulateur"; a.href = "https://www.louispinetavocat.fr/contenus/simulateur-valorisation-restaurant"; a.target = "_blank"; a.rel = "noopener";
+    a.style.cssText = "color:var(--noir);font-weight:600;text-decoration:underline";
+    simLink.appendChild(a);
+    nc.appendChild(simLink);
+  }
+  container.appendChild(nc);
+
+  /* Contact CTA */
+  const ctaCard = createEl("div","contact-cta-card");
+  ctaCard.appendChild(createText("h3","","Besoin d\u2019un accompagnement ?"));
+  const ctaText = globalPct < 70
+    ? "Votre audit r\u00e9v\u00e8le des points sensibles. Ma\u00eetre Pinet peut s\u00e9curiser votre projet avant toute signature."
+    : "Ma\u00eetre Pinet v\u00e9rifie le bail, les actes et la conformit\u00e9 pour s\u00e9curiser votre acquisition.";
+  ctaCard.appendChild(createText("p","", ctaText));
+  const ctaBtns = createEl("div","contact-btns");
+  const waLink = createEl("a","btn-whatsapp");
+  waLink.href = "https://wa.me/33686259294?text=Bonjour%20Ma%C3%AEtre%2C%20je%20viens%20de%20r%C3%A9aliser%20l%27audit%20de%20visite%20restaurant%20et%20j%27aimerais%20en%20discuter.";
+  waLink.target = "_blank"; waLink.rel = "noopener";
+  waLink.textContent = "\u{1F4AC} WhatsApp"; ctaBtns.appendChild(waLink);
+  const contactLink = createEl("a","btn-contact");
+  contactLink.href = "https://www.louispinetavocat.fr/contactez-moi";
+  contactLink.target = "_blank"; contactLink.rel = "noopener";
+  contactLink.textContent = "\u2709\uFE0F Contactez-moi"; ctaBtns.appendChild(contactLink);
+  ctaCard.appendChild(ctaBtns);
+  container.appendChild(ctaCard);
+
+  /* Comparison CTA */
+  const compCard = createEl("div","compare-cta");
+  compCard.appendChild(createText("h3","","\u{1F504} Comparez avec un autre local"));
+  compCard.appendChild(createText("p","","Vous avez visit\u00e9 ou envisagez de visiter d\u2019autres locaux ? Refaites l\u2019audit pour comparer les r\u00e9sultats et identifier le meilleur emplacement pour votre restaurant."));
+  const compBtn = createText("button","btn btn-primary","Auditer un autre local \u2192");
+  compBtn.addEventListener("click", function(){ renderApp(); });
+  compCard.appendChild(compBtn);
+  container.appendChild(compCard);
+
+  /* Disclaimer repens\u00e9 */
+  const disc = createEl("div","disclaimer");
+  disc.style.cssText = "background:var(--gris-fond);border:1.5px solid rgba(0,0,0,0.08);border-radius:var(--radius-card);padding:20px;margin:16px 0";
+  disc.appendChild(createText("strong","","\u00c0 propos de ce diagnostic"));
+  var discP1 = createText("p","","Ce DiagLocal est un outil d\u2019aide \u00e0 la r\u00e9flexion con\u00e7u par Ma\u00eetre Louis Pinet, avocat au Barreau de Nantes, d\u00e9di\u00e9 aux restaurateurs.");
+  discP1.style.cssText = "margin-top:8px"; disc.appendChild(discP1);
+  var discP2 = createText("p","","Il identifie des points de vigilance \u00e0 partir de vos r\u00e9ponses, mais ne constitue pas un conseil juridique personnalis\u00e9. L\u2019indice de vigilance ne pr\u00e9juge ni de la qualit\u00e9 du local ni de la viabilit\u00e9 de votre projet. Seule l\u2019analyse d\u2019un professionnel \u2014 avocat, architecte, expert-comptable \u2014 peut vous apporter une r\u00e9ponse adapt\u00e9e \u00e0 votre situation.");
+  disc.appendChild(discP2);
+  container.appendChild(disc);
+
+  /* Buttons */
+  const bg = createEl("div","btn-group");
+
+  /* PDF Download button */
+  var btnPdf = createText("button","btn btn-pdf","\u{1F4C4} T\u00e9l\u00e9charger en PDF");
+  btnPdf.addEventListener("click", function(){
+    if(typeof html2pdf === "undefined"){ showToast("Chargement du module PDF\u2026"); return; }
+    btnPdf.textContent = "G\u00e9n\u00e9ration en cours\u2026";
+    btnPdf.classList.add("generating");
+    /* Hide buttons for PDF generation */
+    bg.style.display = "none";
+    var resultContainer = container;
+    var opt = {
+      margin: [10, 10, 10, 10],
+      filename: "DiagLocal-Restaurant-" + new Date().toISOString().split("T")[0] + ".pdf",
+      image: { type: "jpeg", quality: 0.95 },
+      html2canvas: { scale: 2, useCORS: true, scrollY: 0, windowWidth: 650 },
+      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+      pagebreak: { mode: ["avoid-all", "css", "legacy"] }
+    };
+    html2pdf().set(opt).from(resultContainer).save().then(function(){
+      btnPdf.textContent = "\u{1F4C4} T\u00e9l\u00e9charger en PDF";
+      btnPdf.classList.remove("generating");
+      bg.style.display = "";
+      showToast("PDF t\u00e9l\u00e9charg\u00e9 !");
+    }).catch(function(){
+      btnPdf.textContent = "\u{1F4C4} T\u00e9l\u00e9charger en PDF";
+      btnPdf.classList.remove("generating");
+      bg.style.display = "";
+      showToast("Erreur lors de la g\u00e9n\u00e9ration du PDF");
+    });
+  });
+  bg.appendChild(btnPdf);
+
+  const bp = createText("button","btn btn-dark","Imprimer le r\u00e9sultat");
+  bp.addEventListener("click", function(){ window.print(); }); bg.appendChild(bp);
+  const br = createText("button","btn btn-secondary","Recommencer l\u2019audit");
+  br.addEventListener("click", function(){ renderApp(); }); bg.appendChild(br);
+  container.appendChild(bg);
+
+  /* Stagger card animations on result page */
+  setTimeout(function(){
+    var cards = container.querySelectorAll(".card, .vigilance-box, .contact-cta-card, .compare-cta, .disclaimer");
+    cards.forEach(function(c, i){
+      c.style.opacity = "0"; c.style.transform = "translateY(20px)";
+      c.style.transition = "opacity 0.45s ease, transform 0.45s ease";
+      c.style.transitionDelay = (i * 0.08) + "s";
+      setTimeout(function(){ c.style.opacity = "1"; c.style.transform = "translateY(0)"; }, 50);
+    });
+  }, 100);
+}
+
+renderApp();
+})();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</body>
+</html>

@@ -53,6 +53,10 @@ body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-seri
 .info-box{background:rgba(196,233,19,0.08);border-left:3px solid var(--jaune);border-radius:0 10px 10px 0;padding:14px 16px;margin:12px 0 16px;font-size:0.8rem;color:var(--noir);line-height:1.6}
 .info-box strong{font-weight:600}
 .info-box .info-title{font-weight:600;font-size:0.82rem;margin-bottom:6px;display:block}
+.info-box.info-highlight{background:linear-gradient(135deg,rgba(196,233,19,0.10) 0%,rgba(196,233,19,0.04) 100%);border-left:4px solid var(--jaune);border-radius:0 var(--radius-card) var(--radius-card) 0;padding:20px 20px 18px;box-shadow:0 2px 8px rgba(196,233,19,0.10)}
+.info-box.info-highlight .info-title{font-size:0.88rem;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.info-box.info-highlight .info-title::before{content:"⚖️";font-size:1rem}
+.info-box.info-highlight .info-source{display:block;font-size:0.72rem;color:var(--gris-texte);margin-top:10px;font-style:italic}
 .info-scale{margin:8px 0 4px;padding:0;list-style:none}
 .info-scale li{padding:3px 0;font-size:0.78rem;display:flex;align-items:center;gap:8px}
 .info-scale li .dot{width:8px;height:8px;min-width:8px;border-radius:50%;display:inline-block}
@@ -295,7 +299,7 @@ const sections = [
           { label: "Je ne sais pas encore", value: "inconnu", score: 0 }
         ], alert_if: ["risque"], alert_msg: "Bail court : risque de non-renouvellement ou d\u2019augmentation de loyer. V\u00e9rifiez les conditions de renouvellement." },
       { id: "bail_destination", text: function(){ var typeLabels = { traditionnelle: "restauration traditionnelle", bistronomique: "restauration bistronomique", gastronomique: "restauration gastronomique", rapide: "restauration rapide", street_food: "street food / snacking", coffee_shop: "coffee shop / salon de th\u00e9", franchise: "franchise" }; var label = typeLabels[state.restaurationType] || "restauration"; return "La clause de destination du bail autorise-t-elle sp\u00e9cifiquement votre activit\u00e9 de " + label + " ?"; }, hint: function(){ var base = "Attention : la destination du bail doit correspondre exactement \u00e0 votre projet. Un bail autorisant la \u00ab\u00a0restauration traditionnelle\u00a0\u00bb ne permet pas d\u2019exploiter une restauration rapide, et inversement."; if(state.restaurationType === "rapide" || state.restaurationType === "street_food") base += " \u26a0\ufe0f Point de vigilance : juridiquement, restauration rapide et street food rel\u00e8vent du m\u00eame r\u00e9gime, mais la r\u00e9alit\u00e9 op\u00e9rationnelle varie \u00e9norm\u00e9ment (un street food cor\u00e9en avec cuisson intense vs. un pok\u00e9 bowl sans extraction). V\u00e9rifiez que la destination couvre pr\u00e9cis\u00e9ment votre concept."; if(state.restaurationType === "coffee_shop") base += " \u26a0\ufe0f Point de vigilance : un coffee shop peut rel\u00e8ver de la restauration ou du d\u00e9bit de boissons selon l\u2019offre propos\u00e9e. Si vous servez des plats chauds, la destination doit pr\u00e9voir la restauration."; return base; }, type: "choice",
-        infoBox: { title: "La destination du bail : un point essentiel", text: "C\u2019est l\u2019un des premiers \u00e9l\u00e9ments que Ma\u00eetre Pinet v\u00e9rifie. La clause de destination d\u00e9termine pr\u00e9cis\u00e9ment l\u2019activit\u00e9 que vous pouvez exercer dans le local. Prenons un exemple : un bail autorisant la \u00ab\u00a0restauration traditionnelle\u00a0\u00bb ne vous permet pas d\u2019exploiter une restauration rapide. Cette distinction a des cons\u00e9quences directes sur votre activit\u00e9, vos horaires, votre client\u00e8le et vos obligations r\u00e9glementaires. Un bail trop restrictif peut bloquer votre projet." },
+        infoBox: { title: "La destination du bail : un point essentiel", highlight: true, text: "C\u2019est l\u2019un des premiers \u00e9l\u00e9ments que Ma\u00eetre Pinet v\u00e9rifie. La clause de destination d\u00e9termine pr\u00e9cis\u00e9ment l\u2019activit\u00e9 que vous pouvez exercer dans le local. Prenons un exemple : un bail autorisant la \u00ab\u00a0restauration traditionnelle\u00a0\u00bb ne vous permet pas d\u2019exploiter une restauration rapide. Cette distinction a des cons\u00e9quences directes sur votre activit\u00e9, vos horaires, votre client\u00e8le et vos obligations r\u00e9glementaires. Un bail trop restrictif peut bloquer votre projet.", source: "Art. L. 145-47 et s. du Code de commerce \u2014 D\u00e9sp\u00e9cialisation du bail commercial" },
         options: [
           { label: function(){ var typeLabels = { traditionnelle: "restauration traditionnelle", bistronomique: "restauration bistronomique", gastronomique: "restauration gastronomique", rapide: "restauration rapide", street_food: "street food / snacking", coffee_shop: "coffee shop / salon de th\u00e9", franchise: "activit\u00e9 de franchise" }; var label = typeLabels[state.restaurationType] || "restauration"; return "Oui, l\u2019activit\u00e9 de " + label + " est explicitement autoris\u00e9e"; }, value: "ok", score: 3 },
           { label: "Clause \u00abtous commerces\u00bb ou assimil\u00e9e", value: "moyen", score: 2 },
@@ -825,10 +829,11 @@ function createChoiceCard(label, desc, selected, onClick){
 }
 
 function buildInfoBox(ib){
-  const box = createEl("div","info-box");
+  const box = createEl("div", ib.highlight ? "info-box info-highlight" : "info-box");
   if(ib.title) box.appendChild(createText("span","info-title", ib.title));
   if(ib.text) box.appendChild(createText("span","", ib.text));
   if(ib.scale){ const ul = createEl("ul","info-scale"); ib.scale.forEach(function(s){ const li = createEl("li"); const dot = createEl("span","dot"); dot.style.background = s.color; li.appendChild(dot); li.appendChild(document.createTextNode(s.label)); ul.appendChild(li); }); box.appendChild(ul); }
+  if(ib.source) box.appendChild(createText("span","info-source", ib.source));
   return box;
 }
 

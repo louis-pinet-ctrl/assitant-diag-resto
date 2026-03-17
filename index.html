@@ -247,7 +247,7 @@ const BAR_ANIM_DELAY = 200;
 const state = {
   currentScreen: 0,
   /* Step 1: Operational profile */
-  restaurationType: null,      /* traditionnelle, rapide, street_food, gastronomique, bistronomique, franchise */
+  restaurationType: null,      /* traditionnelle, rapide, franchise, street_food, coffee_shop, bistronomique, gastronomique */
   franchiseur: "",
   cookingType: null,            /* classique, cuisson_douce, sans_cuisson, mixte */
   needsExtraction: null,        /* oui, non, ne_sais_pas */
@@ -294,10 +294,10 @@ const sections = [
           { label: "Moins de 3 ans", value: "risque", score: 1 },
           { label: "Je ne sais pas encore", value: "inconnu", score: 0 }
         ], alert_if: ["risque"], alert_msg: "Bail court : risque de non-renouvellement ou d\u2019augmentation de loyer. V\u00e9rifiez les conditions de renouvellement." },
-      { id: "bail_destination", text: function(){ var typeLabels = { traditionnelle: "restauration traditionnelle", bistronomique: "restauration bistronomique", gastronomique: "restauration gastronomique", rapide: "restauration rapide", street_food: "street food / snacking", franchise: "franchise" }; var label = typeLabels[state.restaurationType] || "restauration"; return "La clause de destination du bail autorise-t-elle spécifiquement votre activité de " + label + " ?"; }, hint: function(){ return "Attention : la destination du bail doit correspondre exactement à votre projet. Un bail autorisant la « restauration traditionnelle » ne permet pas d\u2019exploiter une restauration rapide, et inversement."; }, type: "choice",
-        infoBox: { title: "La destination du bail : un point essentiel", text: "C\u2019est l\u2019un des premiers \u00e9l\u00e9ments que Ma\u00eetre Pinet v\u00e9rifie. La clause de destination d\u00e9termine pr\u00e9cis\u00e9ment l\u2019activit\u00e9 que vous pouvez exercer dans le local. Prenons un exemple : un bail autorisant la \u00ab\u00a0restauration traditionnelle\u00a0\u00bb ne vous permet pas d\u2019exploiter une restauration rapide. Cette distinction a des cons\u00e9quences directes sur votre activit\u00e9, vos horaires, votre client\u00e8le et vos obligations r\u00e9glementaires. Un bail trop restrictif peut bloquer votre projet." },
+      { id: "bail_destination", text: function(){ var typeLabels = { traditionnelle: "restauration traditionnelle", bistronomique: "restauration bistronomique", gastronomique: "restauration gastronomique", rapide: "restauration rapide", street_food: "street food / snacking", coffee_shop: "coffee shop / salon de th\u00e9", franchise: "franchise" }; var label = typeLabels[state.restaurationType] || "restauration"; return "La clause de destination du bail autorise-t-elle sp\u00e9cifiquement votre activit\u00e9 de " + label + " ?"; }, hint: function(){ var base = "Attention : la destination du bail doit correspondre exactement \u00e0 votre projet. Un bail autorisant la \u00ab\u00a0restauration traditionnelle\u00a0\u00bb ne permet pas d\u2019exploiter une restauration rapide, et inversement."; if(state.restaurationType === "rapide" || state.restaurationType === "street_food") base += " \u26a0\ufe0f Point de vigilance : juridiquement, restauration rapide et street food rel\u00e8vent du m\u00eame r\u00e9gime, mais la r\u00e9alit\u00e9 op\u00e9rationnelle varie \u00e9norm\u00e9ment (un street food cor\u00e9en avec cuisson intense vs. un pok\u00e9 bowl sans extraction). V\u00e9rifiez que la destination couvre pr\u00e9cis\u00e9ment votre concept."; if(state.restaurationType === "coffee_shop") base += " \u26a0\ufe0f Point de vigilance : un coffee shop peut rel\u00e8ver de la restauration ou du d\u00e9bit de boissons selon l\u2019offre propos\u00e9e. Si vous servez des plats chauds, la destination doit pr\u00e9voir la restauration."; return base; }, type: "choice",
+        infoBox: { title: "La destination du bail : un point essentiel", text: "C\u2019est l\u2019un des premiers \u00e9l\u00e9ments que Ma\u00eetre Pinet v\u00e9rifie. La clause de destination d\u00e9termine pr\u00e9cis\u00e9ment l\u2019activit\u00e9 que vous pouvez exercer dans le local. Prenons un exemple : un bail autorisant la \u00ab\u00a0restauration traditionnelle\u00a0\u00bb ne vous permet pas d\u2019exploiter une restauration rapide. Cette distinction a des cons\u00e9quences directes sur votre activit\u00e9, vos horaires, votre client\u00e8le et vos obligations r\u00e9glementaires. Un bail trop restrictif peut bloquer votre projet. \u00c0 noter : la restauration rapide recouvre des r\u00e9alit\u00e9s tr\u00e8s diff\u00e9rentes (street food avec cuisson intense, poke bowl sans extraction, coffee shop\u2026). M\u00eame si juridiquement restauration rapide et street food ne font pas l\u2019objet d\u2019une distinction, votre bail doit couvrir votre concept sp\u00e9cifique." },
         options: [
-          { label: function(){ var typeLabels = { traditionnelle: "restauration traditionnelle", bistronomique: "restauration bistronomique", gastronomique: "restauration gastronomique", rapide: "restauration rapide", street_food: "street food / snacking", franchise: "activité de franchise" }; var label = typeLabels[state.restaurationType] || "restauration"; return "Oui, l\u2019activité de " + label + " est explicitement autorisée"; }, value: "ok", score: 3 },
+          { label: function(){ var typeLabels = { traditionnelle: "restauration traditionnelle", bistronomique: "restauration bistronomique", gastronomique: "restauration gastronomique", rapide: "restauration rapide", street_food: "street food / snacking", coffee_shop: "coffee shop / salon de th\u00e9", franchise: "activit\u00e9 de franchise" }; var label = typeLabels[state.restaurationType] || "restauration"; return "Oui, l\u2019activit\u00e9 de " + label + " est explicitement autoris\u00e9e"; }, value: "ok", score: 3 },
           { label: "Clause \u00abtous commerces\u00bb ou assimil\u00e9e", value: "moyen", score: 2 },
           { label: "Le bail autorise la restauration, mais pas spécifiquement mon type d\u2019activité", value: "mismatch", score: 1 },
           { label: "Non ou je ne suis pas s\u00fbr", value: "risque", score: 0 },
@@ -857,7 +857,7 @@ function getEmailText(pt){
 /* ─── PROFILE SUMMARY ─── */
 function getProfileSummary(){
   const tags = [];
-  const typeLabels = { rapide:"Restauration rapide", street_food:"Street food", gastronomique:"Gastronomique", bistronomique:"Bistronomique", traditionnelle:"Traditionnelle / Classique", franchise:"Franchise" };
+  const typeLabels = { rapide:"Restauration rapide", street_food:"Street food", coffee_shop:"Coffee shop / Salon de th\u00e9", gastronomique:"Gastronomique", bistronomique:"Bistronomique", traditionnelle:"Traditionnelle / Classique", franchise:"Franchise" };
   const cookLabels = { classique:"Cuisson classique", cuisson_douce:"Cuisson douce", sans_cuisson:"Sans cuisson", mixte:"Cuisson mixte" };
   if(state.restaurationType) tags.push({ label: typeLabels[state.restaurationType] || state.restaurationType });
   if(state.franchiseur) tags.push({ label: "Franchiseur : " + state.franchiseur });
@@ -1093,11 +1093,12 @@ function renderOpStep1(container){
   const group = createEl("div"); group.setAttribute("role","radiogroup"); group.setAttribute("aria-label","Type de restauration");
   const types = [
     { value: "traditionnelle", title: "Restauration traditionnelle / Classique", desc: "Cuisine faite maison, brasserie, caf\u00e9-restaurant, service \u00e0 table, carte vari\u00e9e." },
-    { value: "bistronomique", title: "Bistronomique", desc: "Cuisine gastronomique dans un cadre d\u00e9contract\u00e9, produits de qualit\u00e9." },
-    { value: "gastronomique", title: "Gastronomique", desc: "Haute cuisine, service haut de gamme, produits d\u2019exception." },
-    { value: "rapide", title: "Restauration rapide", desc: "Service au comptoir, consommation sur place ou \u00e0 emporter." },
+    { value: "rapide", title: "Restauration rapide", desc: "Service au comptoir, consommation sur place ou \u00e0 emporter, fast-food, pizzeria, kebab\u2026" },
+    { value: "franchise", title: "Franchise / R\u00e9seau", desc: "Ouverture sous enseigne d\u2019un r\u00e9seau de franchise." },
     { value: "street_food", title: "Street food / Snacking", desc: "Offre nomade, sandwicherie, saladerie, poke, bagels\u2026" },
-    { value: "franchise", title: "Franchise / R\u00e9seau", desc: "Ouverture sous enseigne d\u2019un r\u00e9seau de franchise." }
+    { value: "coffee_shop", title: "Coffee shop / Salon de th\u00e9", desc: "Boissons chaudes, p\u00e2tisseries, brunch, petite restauration l\u00e9g\u00e8re." },
+    { value: "bistronomique", title: "Bistronomique", desc: "Cuisine gastronomique dans un cadre d\u00e9contract\u00e9, produits de qualit\u00e9." },
+    { value: "gastronomique", title: "Gastronomique", desc: "Haute cuisine, service haut de gamme, produits d\u2019exception." }
   ];
   types.forEach(function(t){
     const ch = createChoiceCard(t.title, t.desc, state.restaurationType === t.value, function(){

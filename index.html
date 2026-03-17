@@ -280,6 +280,7 @@ function hasFriture(){
 function isCuissonIntensive(){
   return state.cookingType === "classique" || state.cookingType === "mixte";
 }
+function resolve(v, arg){ return typeof v === "function" ? v(arg) : v; }
 
 /* ─── SECTIONS & QUESTIONS ─── */
 const sections = [
@@ -293,14 +294,15 @@ const sections = [
           { label: "Moins de 3 ans", value: "risque", score: 1 },
           { label: "Je ne sais pas encore", value: "inconnu", score: 0 }
         ], alert_if: ["risque"], alert_msg: "Bail court : risque de non-renouvellement ou d\u2019augmentation de loyer. V\u00e9rifiez les conditions de renouvellement." },
-      { id: "bail_destination", text: "La clause de destination du bail autorise-t-elle votre activit\u00e9 de restauration ?", hint: "V\u00e9rifiez que le bail permet l\u2019activit\u00e9 envisag\u00e9e (restauration, bar, traiteur\u2026).", type: "choice",
+      { id: "bail_destination", text: function(){ var typeLabels = { traditionnelle: "restauration traditionnelle", bistronomique: "restauration bistronomique", gastronomique: "restauration gastronomique", rapide: "restauration rapide", street_food: "street food / snacking", franchise: "franchise" }; var label = typeLabels[state.restaurationType] || "restauration"; return "La clause de destination du bail autorise-t-elle spécifiquement votre activité de " + label + " ?"; }, hint: function(){ return "Attention : la destination du bail doit correspondre exactement à votre projet. Un bail autorisant la « restauration traditionnelle » ne permet pas d\u2019exploiter une restauration rapide, et inversement."; }, type: "choice",
         infoBox: { title: "La destination du bail : un point essentiel", text: "C\u2019est l\u2019un des premiers \u00e9l\u00e9ments que Ma\u00eetre Pinet v\u00e9rifie. La clause de destination d\u00e9termine pr\u00e9cis\u00e9ment l\u2019activit\u00e9 que vous pouvez exercer dans le local. Prenons un exemple : un bail autorisant la \u00ab\u00a0restauration traditionnelle\u00a0\u00bb ne vous permet pas d\u2019exploiter une restauration rapide. Cette distinction a des cons\u00e9quences directes sur votre activit\u00e9, vos horaires, votre client\u00e8le et vos obligations r\u00e9glementaires. Un bail trop restrictif peut bloquer votre projet." },
         options: [
-          { label: "Oui, activit\u00e9 restauration explicitement autoris\u00e9e", value: "ok", score: 3 },
+          { label: function(){ var typeLabels = { traditionnelle: "restauration traditionnelle", bistronomique: "restauration bistronomique", gastronomique: "restauration gastronomique", rapide: "restauration rapide", street_food: "street food / snacking", franchise: "activité de franchise" }; var label = typeLabels[state.restaurationType] || "restauration"; return "Oui, l\u2019activité de " + label + " est explicitement autorisée"; }, value: "ok", score: 3 },
           { label: "Clause \u00abtous commerces\u00bb ou assimil\u00e9e", value: "moyen", score: 2 },
+          { label: "Le bail autorise la restauration, mais pas spécifiquement mon type d\u2019activité", value: "mismatch", score: 1 },
           { label: "Non ou je ne suis pas s\u00fbr", value: "risque", score: 0 },
           { label: "Je n\u2019ai pas encore le bail", value: "inconnu", score: 0 }
-        ], alert_if: ["risque"], alert_msg: "Clause de destination restrictive : risque de r\u00e9siliation si activit\u00e9 non conforme." },
+        ], alert_if: ["risque", "mismatch"], alert_msg: function(val){ if(val === "mismatch") return "⚠️ Attention : si la destination du bail ne correspond pas exactement à votre projet, une procédure de déspécialisation auprès du bailleur sera nécessaire. Cette démarche peut engendrer un coût significatif (de l\u2019ordre de 10\u00a0000\u00a0€ dans les dossiers récents) et nécessite l\u2019accord du bailleur. Faites vérifier ce point par un avocat spécialisé avant de vous engager."; return "Clause de destination restrictive : risque de résiliation si activité non conforme. Une déspécialisation peut être nécessaire (coût estimé : ~10\u00a0000\u00a0€). Consultez un avocat spécialisé."; } },
       { id: "bail_loyer", text: "Le loyer vous semble-t-il coh\u00e9rent avec le march\u00e9 local ?", hint: "Comparez avec les loyers pratiqu\u00e9s dans le quartier pour la m\u00eame surface.", type: "choice",
         infoBox: { title: "Le taux d\u2019effort, c\u2019est quoi ?", text: "Le taux d\u2019effort correspond au ratio loyer annuel / chiffre d\u2019affaires HT. Il permet de mesurer le poids du loyer sur votre activit\u00e9.",
           scale: [
@@ -312,7 +314,7 @@ const sections = [
         options: [
           { label: "Oui, dans la fourchette du march\u00e9 (< 8\u00a0%)", value: "ok", score: 3 },
           { label: "L\u00e9g\u00e8rement au-dessus (8-10\u00a0%)", value: "moyen", score: 2 },
-          { label: "Nettement au-dessus (> 10\u00a0%) ou je ne sais pas", value: "risque", score: 1 },
+          { label: "Nettement au-dessus (> 10\u00a0%)", value: "risque", score: 1 },
           { label: "Je n\u2019ai pas encore cette information", value: "inconnu", score: 0 }
         ], alert_if: ["risque"], alert_msg: "Taux d\u2019effort sup\u00e9rieur \u00e0 10\u00a0% hors centre commercial : risque important pour la viabilit\u00e9 financi\u00e8re." },
       { id: "bail_charges", text: "Avez-vous le d\u00e9tail des charges locatives (provisions sur charges, taxe fonci\u00e8re, TEOM) ?", type: "choice",
@@ -1515,14 +1517,14 @@ function renderQuestion(container, screen){
   const hdr = createEl("div","section-header");
   hdr.appendChild(createText("span","section-badge", sec.icon + " " + sec.name)); card.appendChild(hdr);
   card.appendChild(createText("div","question-label","Question " + (qIdx + 1) + " sur " + total));
-  card.appendChild(createText("div","question-text", q.text));
-  if(q.hint) card.appendChild(createText("div","question-hint", q.hint));
+  card.appendChild(createText("div","question-text", resolve(q.text)));
+  if(q.hint) card.appendChild(createText("div","question-hint", resolve(q.hint)));
   if(q.infoBox) card.appendChild(buildInfoBox(q.infoBox));
 
   const selectedValue = state.answers[q.id] ? state.answers[q.id].value : null;
-  const group = createEl("div"); group.setAttribute("role","radiogroup"); group.setAttribute("aria-label", q.text);
+  const group = createEl("div"); group.setAttribute("role","radiogroup"); group.setAttribute("aria-label", resolve(q.text));
   q.options.forEach(function(opt){
-    const ch = createChoiceCard(opt.label, null, selectedValue === opt.value, function(){
+    const ch = createChoiceCard(resolve(opt.label), null, selectedValue === opt.value, function(){
       state.answers[q.id] = { value: opt.value, score: opt.score, maxScore: MAX_SCORE, sectionId: sec.id };
       selectInGroup(group, ch);
       setTimeout(function(){ if(currentIdx < screens.length - 1) showScreen(currentIdx + 1); }, TRANSITION_DELAY);
@@ -1576,8 +1578,8 @@ function buildAuditSummaryForEmail(){
     if(a){
       sectionData[sec.id].score += a.score; sectionData[sec.id].max += MAX_SCORE;
       totalScore += a.score; totalMax += MAX_SCORE;
-      if(q.alert_if && q.alert_msg && q.alert_if.indexOf(a.value) !== -1) sectionData[sec.id].alerts.push(q.alert_msg);
-      if(a.value === "inconnu") sectionData[sec.id].unknowns.push(q.text);
+      if(q.alert_if && q.alert_msg && q.alert_if.indexOf(a.value) !== -1) sectionData[sec.id].alerts.push(resolve(q.alert_msg, a.value));
+      if(a.value === "inconnu") sectionData[sec.id].unknowns.push(resolve(q.text));
     }
   });
   const globalPct = totalMax > 0 ? Math.round((totalScore / totalMax) * 100) : 0;
@@ -2028,8 +2030,8 @@ function renderResult(container){
     if(a){
       sectionScores[sec.id].score += a.score; sectionScores[sec.id].max += MAX_SCORE;
       totalScore += a.score; totalMax += MAX_SCORE;
-      sectionDetails[sec.id].push({ question: q.text, answer: a.value, score: a.score, maxScore: MAX_SCORE, label: q.options ? q.options.filter(function(o){ return o.value === a.value; }).map(function(o){ return o.label; })[0] : a.value });
-      if(q.alert_if && q.alert_msg && q.alert_if.indexOf(a.value) !== -1) alerts.push({ section: sec.name, msg: q.alert_msg, level: "red" });
+      sectionDetails[sec.id].push({ question: resolve(q.text), answer: a.value, score: a.score, maxScore: MAX_SCORE, label: q.options ? q.options.filter(function(o){ return o.value === a.value; }).map(function(o){ return resolve(o.label); })[0] : a.value });
+      if(q.alert_if && q.alert_msg && q.alert_if.indexOf(a.value) !== -1) alerts.push({ section: sec.name, msg: resolve(q.alert_msg, a.value), level: "red" });
       if(a.value === "inconnu") unknowns.push(item);
     } else { unanswered.push(item); }
   });
@@ -2187,7 +2189,7 @@ function renderResult(container){
     uc.appendChild(createText("p","","Vous avez r\u00e9pondu \u00ab\u00a0Je ne sais pas\u00a0\u00bb \u00e0 ces questions. Il est essentiel de les clarifier avant de vous engager :"));
     unknowns.forEach(function(item){
       const row = createEl("div","inconnu-item"); row.appendChild(createEl("div","alert-dot orange"));
-      row.appendChild(createText("div","", item.section.icon + " " + item.question.text)); uc.appendChild(row);
+      row.appendChild(createText("div","", item.section.icon + " " + resolve(item.question.text))); uc.appendChild(row);
     });
     container.appendChild(uc);
   }

@@ -303,8 +303,8 @@ const sections = [
           { label: "Non ou je ne suis pas s\u00fbr", value: "risque", score: 0 },
           { label: "Je n\u2019ai pas encore le bail", value: "inconnu", score: 0 }
         ], alert_if: ["risque", "mismatch"], alert_msg: function(val){ if(val === "mismatch") return "⚠️ Attention : si la destination du bail ne correspond pas exactement à votre projet, une procédure de déspécialisation auprès du bailleur sera nécessaire. Cette démarche peut engendrer un coût significatif (de l\u2019ordre de 10\u00a0000\u00a0€ dans les dossiers récents) et nécessite l\u2019accord du bailleur. Faites vérifier ce point par un avocat spécialisé avant de vous engager."; return "Clause de destination restrictive : risque de résiliation si activité non conforme. Une déspécialisation peut être nécessaire (coût estimé : ~10\u00a0000\u00a0€). Consultez un avocat spécialisé."; } },
-      { id: "bail_loyer", text: "Le loyer vous semble-t-il coh\u00e9rent avec le march\u00e9 local ?", hint: "Comparez avec les loyers pratiqu\u00e9s dans le quartier pour la m\u00eame surface.", type: "choice",
-        infoBox: { title: "Le taux d\u2019effort, c\u2019est quoi ?", text: "Le taux d\u2019effort correspond au ratio loyer annuel / chiffre d\u2019affaires HT. Il permet de mesurer le poids du loyer sur votre activit\u00e9.",
+      { id: "bail_loyer", text: "Le loyer vous semble-t-il coh\u00e9rent avec le march\u00e9 local ?", hint: "Comparez avec les loyers pratiqu\u00e9s dans le quartier pour la m\u00eame surface et le m\u00eame type d\u2019activit\u00e9.", type: "choice",
+        infoBox: { title: "Le taux d\u2019effort, c\u2019est quoi ?", text: "Le taux d\u2019effort correspond au ratio loyer annuel / chiffre d\u2019affaires HT. Il permet de mesurer le poids du loyer sur votre activit\u00e9. Les rep\u00e8res ci-dessous sont donn\u00e9s pour la restauration classique. Pour un coffee shop ou salon de th\u00e9, les marges \u00e9tant g\u00e9n\u00e9ralement plus faibles sur les boissons, le taux d\u2019effort doit \u00eatre encore plus ma\u00eetris\u00e9.",
           scale: [
             { label: "7 \u00e0 8\u00a0% \u2014 Loyer raisonnable", color: "var(--vert-ok)" },
             { label: "9\u00a0% \u2014 Loyer \u00e9lev\u00e9, vigilance", color: "var(--orange-warning)" },
@@ -611,12 +611,13 @@ const sections = [
           { label: "Oui, mais inutilisable en l\u2019\u00e9tat", value: "risque", score: 1 }
         ] },
       { id: "trav_chambre_froide", text: "Le local dispose-t-il d\u2019une chambre froide ?",
-        hint: "La chambre froide est indispensable pour le stockage des denr\u00e9es p\u00e9rissables en restauration.",
+        hint: "La chambre froide est indispensable pour le stockage des denr\u00e9es p\u00e9rissables en restauration. Pour un coffee shop ou un concept sans cuisine, un r\u00e9frig\u00e9rateur professionnel peut suffire.",
         type: "choice",
         options: [
           { label: "Oui, chambre froide fonctionnelle", value: "ok", score: 3 },
           { label: "Oui, mais \u00e0 r\u00e9viser ou remplacer", value: "moyen", score: 2 },
           { label: "Non, \u00e0 installer", value: "risque", score: 1 },
+          { label: "Non concern\u00e9 (coffee shop, pas de stockage de denr\u00e9es p\u00e9rissables)", value: "ok", score: 3 },
           { label: "Je ne sais pas", value: "inconnu", score: 0 }
         ] },
       { id: "trav_chambre_chaude", text: "Le local dispose-t-il d\u2019un espace de pousse (chambre de fermentation) ?",
@@ -1140,14 +1141,16 @@ function renderOpStep2(container){
   const card = createEl("div","card");
   card.appendChild(createText("div","question-label","\u00c9tape 1 \u2014 Votre projet op\u00e9rationnel"));
   card.appendChild(createText("div","question-text","Quel type de cuisson allez-vous pratiquer ?"));
-  card.appendChild(createText("div","question-hint","Cela d\u00e9termine les besoins en extraction et les obligations de s\u00e9curit\u00e9."));
+  var cookingHint = "Cela d\u00e9termine les besoins en extraction et les obligations de s\u00e9curit\u00e9.";
+  if(state.restaurationType === "coffee_shop") cookingHint += " Pour un coffee shop, la r\u00e9ponse d\u00e9pend de votre offre : p\u00e2tisseries maison (cuisson douce), petite restauration chaude (cuisson classique), ou uniquement boissons et produits achet\u00e9s (sans cuisson).";
+  card.appendChild(createText("div","question-hint", cookingHint));
 
   const group = createEl("div"); group.setAttribute("role","radiogroup"); group.setAttribute("aria-label","Type de cuisson");
   [
     { value: "classique", title: "Cuisson classique", desc: "Four, plaques, friteuse, grill\u2026 Production de fum\u00e9es et graisses." },
-    { value: "cuisson_douce", title: "Cuisson douce / basse temp\u00e9rature", desc: "Sous-vide, vapeur, bain-marie. Peu de production de fum\u00e9es." },
+    { value: "cuisson_douce", title: "Cuisson douce / basse temp\u00e9rature", desc: "Sous-vide, vapeur, bain-marie, four p\u00e2tissier. Peu de production de fum\u00e9es." },
     { value: "mixte", title: "Cuisson mixte", desc: "Combinaison de cuisson classique et douce selon les plats." },
-    { value: "sans_cuisson", title: "Sans cuisson / assemblage", desc: "Saladerie, poke bowls, sandwicherie froide. Pas de cuisson sur place." }
+    { value: "sans_cuisson", title: "Sans cuisson / assemblage", desc: "Saladerie, poke bowls, sandwicherie froide, coffee shop boissons uniquement. Pas de cuisson sur place." }
   ].forEach(function(t){
     const ch = createChoiceCard(t.title, t.desc, state.cookingType === t.value, function(){
       state.cookingType = t.value; selectInGroup(group, ch);
@@ -1175,7 +1178,7 @@ function renderOpStep3(container){
   const card = createEl("div","card");
   card.appendChild(createText("div","question-label","\u00c9tape 1 \u2014 Votre projet op\u00e9rationnel"));
   card.appendChild(createText("div","question-text","Votre activit\u00e9 n\u00e9cessite-t-elle une extraction ?"));
-  card.appendChild(buildInfoBox({ title: "Quand a-t-on besoin d\u2019extraction ?", text: "Toute activit\u00e9 de cuisson g\u00e9n\u00e9rant des fum\u00e9es, vapeurs ou graisses n\u00e9cessite un syst\u00e8me d\u2019extraction conforme au RSD. Une saladerie ou sandwicherie froide peut parfois s\u2019en passer, mais une simple ventilation ne suffit g\u00e9n\u00e9ralement pas d\u00e8s qu\u2019il y a cuisson." }));
+  card.appendChild(buildInfoBox({ title: "Quand a-t-on besoin d\u2019extraction ?", text: "Toute activit\u00e9 de cuisson g\u00e9n\u00e9rant des fum\u00e9es, vapeurs ou graisses n\u00e9cessite un syst\u00e8me d\u2019extraction conforme au RSD. Une saladerie, sandwicherie froide ou un coffee shop sans cuisson sur place peut s\u2019en passer, mais une simple ventilation ne suffit g\u00e9n\u00e9ralement pas d\u00e8s qu\u2019il y a cuisson (y compris four p\u00e2tissier)." }));
 
   const group = createEl("div"); group.setAttribute("role","radiogroup"); group.setAttribute("aria-label","Extraction n\u00e9cessaire");
   [{ value: "oui", title: "Oui, extraction n\u00e9cessaire", desc: "Cuisson sur place avec production de fum\u00e9es/graisses." },
